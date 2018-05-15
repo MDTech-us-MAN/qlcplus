@@ -24,18 +24,19 @@ import QtQuick 2.0
 QtObject
 {
     property string robotoFontName: "Roboto Condensed"
+
     /* Colors */
     property color bgMain:     "#303030"
     property color bgStronger: "#161616"
     property color bgStrong:   "#232323"
     property color bgMedium:   "#333"
-    property color bgControl:  "#444"
-    property color bgLight:    "#5F5F5F"
+    property color bgControl:  "#555"
+    property color bgLight:    "#6F6F6F"
     property color bgLighter:  "#8F8F8F"
 
-    property color fgMain:   "white"
-    property color fgMedium: "#888"
-    property color fgLight:  "#aaa"
+    property color fgMain:     "white"
+    property color fgMedium:   "#888"
+    property color fgLight:    "#aaa"
 
     property color sectionHeader:    "#31456B"
     property color highlight:        "#0978FF"

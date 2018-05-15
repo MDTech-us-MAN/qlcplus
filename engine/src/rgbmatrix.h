@@ -137,8 +137,12 @@ public:
      * Fixture Group
      ************************************************************************/
 public:
-    void setFixtureGroup(quint32 id);
+    /** Get/Set the Fixture Group associated to this RGBMatrix */
     quint32 fixtureGroup() const;
+    void setFixtureGroup(quint32 id);
+
+    /** @reimp */
+    QList<quint32> components();
 
 private:
     quint32 m_fixtureGroupID;
@@ -253,7 +257,7 @@ private:
      *********************************************************************/
 public:
     /** @reimp */
-    void adjustAttribute(qreal fraction, int attributeIndex);
+    int adjustAttribute(qreal fraction, int attributeId);
 
     /*************************************************************************
      * Blend mode

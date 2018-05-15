@@ -33,6 +33,7 @@
 QLCFixtureMode::QLCFixtureMode(QLCFixtureDef* fixtureDef)
     : m_fixtureDef(fixtureDef)
     , m_masterIntensityChannel(QLCChannel::invalid())
+    , m_useGlobalPhysical(true)
 {
     Q_ASSERT(fixtureDef != NULL);
 }
@@ -40,6 +41,7 @@ QLCFixtureMode::QLCFixtureMode(QLCFixtureDef* fixtureDef)
 QLCFixtureMode::QLCFixtureMode(QLCFixtureDef* fixtureDef, const QLCFixtureMode* mode)
     : m_fixtureDef(fixtureDef)
     , m_masterIntensityChannel(QLCChannel::invalid())
+    , m_useGlobalPhysical(true)
 {
     Q_ASSERT(fixtureDef != NULL);
     Q_ASSERT(mode != NULL);
@@ -57,6 +59,7 @@ QLCFixtureMode& QLCFixtureMode::operator=(const QLCFixtureMode& mode)
     if (this != &mode)
     {
         m_name = mode.m_name;
+        m_useGlobalPhysical = mode.m_useGlobalPhysical;
         m_physical = mode.m_physical;
         m_heads = mode.m_heads;
         m_masterIntensityChannel = QLCChannel::invalid();
@@ -172,6 +175,20 @@ bool QLCFixtureMode::removeChannel(const QLCChannel* channel)
     return false;
 }
 
+bool QLCFixtureMode::replaceChannel(QLCChannel *currChannel, QLCChannel *newChannel)
+{
+    if (currChannel == NULL || newChannel == NULL)
+        return false;
+
+    int chIndex = m_channels.indexOf(currChannel);
+    if (chIndex == -1)
+        return false;
+
+    m_channels.replace(chIndex, newChannel);
+
+    return true;
+}
+
 void QLCFixtureMode::removeAllChannels()
 {
     m_channels.clear();
@@ -206,13 +223,8 @@ quint32 QLCFixtureMode::channelNumber(QLCChannel* channel) const
     if (channel == NULL)
         return QLCChannel::invalid();
 
-    for (int i = 0; i < m_channels.size(); i++)
-    {
-        if (m_channels.at(i) == channel)
-            return i;
-    }
-
-    return QLCChannel::invalid();
+    int idx = m_channels.indexOf(channel);
+    return idx == -1 ? QLCChannel::invalid() : idx;
 }
 
 quint32 QLCFixtureMode::channelNumber(QLCChannel::Group group, QLCChannel::ControlByte cByte) const
@@ -299,11 +311,25 @@ void QLCFixtureMode::cacheHeads()
 
 void QLCFixtureMode::setPhysical(const QLCPhysical& physical)
 {
+    m_useGlobalPhysical = false;
     m_physical = physical;
+}
+
+void QLCFixtureMode::resetPhysical()
+{
+    m_useGlobalPhysical = true;
+}
+
+bool QLCFixtureMode::useGlobalPhysical()
+{
+    return m_useGlobalPhysical;
 }
 
 QLCPhysical QLCFixtureMode::physical() const
 {
+    if (m_useGlobalPhysical)
+        return fixtureDef()->physical();
+
     return m_physical;
 }
 
@@ -379,7 +405,8 @@ bool QLCFixtureMode::saveXML(QXmlStreamWriter *doc)
     doc->writeStartElement(KXMLQLCFixtureMode);
     doc->writeAttribute(KXMLQLCFixtureModeName, m_name);
 
-    m_physical.saveXML(doc);
+    if (m_useGlobalPhysical == false)
+        m_physical.saveXML(doc);
 
     /* Channels */
     QVectorIterator <QLCChannel*> it(m_channels);

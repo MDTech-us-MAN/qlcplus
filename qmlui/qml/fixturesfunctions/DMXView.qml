@@ -31,7 +31,12 @@ Rectangle
 
     function hasSettings()
     {
-        return false;
+        return true
+    }
+
+    function showSettings(show)
+    {
+        dmxSettings.visible = show
     }
 
     Flickable
@@ -58,8 +63,17 @@ Rectangle
             width: dmxViewRoot.width
 
             Component.onCompleted: contextManager.enableContext("DMX", true, flowLayout)
-            Component.onDestruction: contextManager.enableContext("DMX", false, flowLayout)
+            Component.onDestruction: if(contextManager) contextManager.enableContext("DMX", false, flowLayout)
         }
     }
-    CustomScrollBar { flickable: fixtureDMXView }
+    CustomScrollBar { flickable: fixtureDMXView; doubleBars: true }
+    CustomScrollBar { orientation: Qt.Horizontal; flickable: fixtureDMXView }
+
+    SettingsViewDMX
+    {
+        id: dmxSettings
+        visible: false
+        x: parent.width - width
+        z: 5
+    }
 }

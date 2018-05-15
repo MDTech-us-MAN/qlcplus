@@ -24,6 +24,7 @@
 #include <QQuickView>
 #include <QVector3D>
 
+#include "qlcchannel.h"
 #include "scenevalue.h"
 
 class Doc;
@@ -33,16 +34,22 @@ class MainViewDMX;
 class FixtureManager;
 class FunctionManager;
 class GenericDMXSource;
+class MonitorProperties;
 class PreviewContext;
 
 class ContextManager : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(QString currentContext READ currentContext NOTIFY currentContextChanged)
+    Q_PROPERTY(QVector3D environmentSize READ environmentSize WRITE setEnvironmentSize NOTIFY environmentSizeChanged)
     Q_PROPERTY(quint32 universeFilter READ universeFilter WRITE setUniverseFilter NOTIFY universeFilterChanged)
-    Q_PROPERTY(bool hasSelectedFixtures READ hasSelectedFixtures NOTIFY selectedFixturesChanged)
-    Q_PROPERTY(QVector3D fixturesPosition READ fixturesPosition WRITE setFixturesPosition)
-    Q_PROPERTY(QVector3D fixturesRotation READ fixturesRotation WRITE setFixturesRotation)
+    Q_PROPERTY(int selectedFixturesCount READ selectedFixturesCount NOTIFY selectedFixturesChanged)
+    Q_PROPERTY(QVector3D fixturesPosition READ fixturesPosition WRITE setFixturesPosition NOTIFY fixturesPositionChanged)
+    Q_PROPERTY(QVector3D fixturesRotation READ fixturesRotation WRITE setFixturesRotation NOTIFY fixturesRotationChanged)
+    Q_PROPERTY(int dumpValuesCount READ dumpValuesCount NOTIFY dumpValuesCountChanged)
+    Q_PROPERTY(quint32 dumpChannelMask READ dumpChannelMask NOTIFY dumpChannelMaskChanged)
+    Q_PROPERTY(bool positionPicking READ positionPicking WRITE setPositionPicking NOTIFY positionPickingChanged)
 
 public:
     explicit ContextManager(QQuickView *view, Doc *doc,
@@ -63,6 +70,28 @@ public:
     Q_INVOKABLE void detachContext(QString name);
     Q_INVOKABLE void reattachContext(QString name);
 
+    /** Switch to the context with the given $name.
+     *  Supports both QLC+ 4 and QLC+ 5 context names */
+    void switchToContext(QString name);
+
+    /** Return the currently active context */
+    QString currentContext() const;
+
+    /** Get/Set the environment width/height/depth size */
+    QVector3D environmentSize() const;
+    void setEnvironmentSize(QVector3D environmentSize);
+
+    /** Enable/Disable a position picking process */
+    bool positionPicking() const;
+    void setPositionPicking(bool enable);
+
+    Q_INVOKABLE void setPositionPickPoint(QVector3D point);
+
+signals:
+    void currentContextChanged();
+    void environmentSizeChanged();
+    void positionPickingChanged();
+
 public slots:
     /** Resets the data structures and update the currently enabled views */
     void resetContexts();
@@ -78,6 +107,8 @@ private:
     QQuickView *m_view;
     /** Reference to the project workspace */
     Doc *m_doc;
+    /** Reference to the Doc Monitor properties */
+    MonitorProperties *m_monProps;
 
     /** Reference to a simple PreviewContext representing
      *  the universe grid view, since it doesn't have a dedicated class */
@@ -94,6 +125,9 @@ private:
     FunctionManager *m_functionManager;
 
     QMap <QString, PreviewContext *> m_contextsMap;
+
+    /** Flag that indicates if a position picking is active */
+    bool m_positionPicking;
 
     /*********************************************************************
      * Universe filtering
@@ -115,24 +149,41 @@ private:
      * Common fixture helpers
      *********************************************************************/
 public:
-    Q_INVOKABLE void setFixtureSelection(quint32 fxID, bool enable);
+    /** Select/Deselect a fixture with the provided $itemID */
+    Q_INVOKABLE void setFixtureSelection(quint32 itemID, bool enable);
 
+    /** Deselect all the currently selected fixtures */
     Q_INVOKABLE void resetFixtureSelection();
 
+    /** Toggle between none/all fixture selection */
     Q_INVOKABLE void toggleFixturesSelection();
 
+    /** Select the fixtures that intersects the provided rectangle coordinates in a 2D environment */
     Q_INVOKABLE void setRectangleSelection(qreal x, qreal y, qreal width, qreal height);
 
-    bool hasSelectedFixtures();
+    /** Returns if at least one fixture is currently selected */
+    int selectedFixturesCount();
 
-    /** Sets the position of the Fixture with the provided $fxID */
-    Q_INVOKABLE void setFixturePosition(quint32 fxID, qreal x, qreal y, qreal z);
+    /** Returns if the fixture with $fxID is currently selected */
+    Q_INVOKABLE bool isFixtureSelected(quint32 itemID);
+
+    /** Sets the position of the Fixture with the provided $itemID */
+    Q_INVOKABLE void setFixturePosition(quint32 itemID, qreal x, qreal y, qreal z);
+
+    /** Adds an offset (in mm) to the selected Fixture positions. This is called only by the 2D view */
+    Q_INVOKABLE void setFixturesOffset(qreal x, qreal y);
 
     /** Set/Get the position of the currently selected fixtures */
     QVector3D fixturesPosition() const;
     void setFixturesPosition(QVector3D position);
 
+    /** Align the currently selected Fixtures with the provided $alignment */
     Q_INVOKABLE void setFixturesAlignment(int alignment);
+
+    /** Distribute the currently selected Fixtures with the provided $direction */
+    Q_INVOKABLE void setFixturesDistribution(int direction);
+
+    Q_INVOKABLE void updateFixturesCapabilities();
 
     Q_INVOKABLE void createFixtureGroup();
 
@@ -140,8 +191,12 @@ public:
     QVector3D fixturesRotation() const;
     void setFixturesRotation(QVector3D degrees);
 
+    /** Select/Deselect all the fixtures of the Group/Universe with the provided $id */
+    Q_INVOKABLE void setFixtureGroupSelection(quint32 id, bool enable, bool isUniverse);
+
 protected slots:
     void slotNewFixtureCreated(quint32 fxID, qreal x, qreal y, qreal z = 0);
+    void slotFixtureDeleted(quint32 itemID);
     void slotChannelValueChanged(quint32 fxID, quint32 channel, quint8 value);
     void slotChannelTypeValueChanged(int type, quint8 value, quint32 channel = UINT_MAX);
     void slotColorChanged(QColor col, QColor wauv);
@@ -160,13 +215,12 @@ protected slots:
 
 signals:
     void selectedFixturesChanged();
+    void fixturesPositionChanged();
+    void fixturesRotationChanged();
 
 private:
     /** The list of the currently selected Fixture IDs */
     QList<quint32> m_selectedFixtures;
-
-    /** Holds the last rotation value to handle relative changes */
-    QVector3D m_prevRotation;
 
     /** A flag indicating if a Function is currently being edited */
     bool m_editingEnabled;
@@ -179,12 +233,53 @@ private:
      * DMX channels dump
      *********************************************************************/
 public:
-    Q_INVOKABLE void dumpDmxChannels();
+    enum ChannelType
+    {
+        DimmerType      = (1 << QLCChannel::Intensity),
+        ColorMacroType  = (1 << QLCChannel::Colour), // Color wheels, color macros
+        GoboType        = (1 << QLCChannel::Gobo),
+        SpeedType       = (1 << QLCChannel::Speed),
+        PanType         = (1 << QLCChannel::Pan),
+        TiltType        = (1 << QLCChannel::Tilt),
+        ShutterType     = (1 << QLCChannel::Shutter),
+        PrismType       = (1 << QLCChannel::Prism),
+        BeamType        = (1 << QLCChannel::Beam),
+        EffectType      = (1 << QLCChannel::Effect),
+        MaintenanceType = (1 << QLCChannel::Maintenance),
+        ColorType       = (1 << (QLCChannel::Maintenance + 1)) // RGB/CMY/WAUV
+    };
+    Q_ENUM(ChannelType)
+
+    /** Store a channel value for Scene dumping */
+    void setDumpValue(quint32 fxID, quint32 channel, uchar value);
+
+    /** Return the number of DMX channels currently available for dumping */
+    int dumpValuesCount() const;
+
+    /** Return the current DMX dump channel type mask */
+    int dumpChannelMask() const;
+
+    Q_INVOKABLE void dumpDmxChannels(QString name, quint32 mask);
+
+    Q_INVOKABLE void dumpDmxChannels(quint32 sceneID, quint32 mask);
 
     /** Resets the current values used for dumping or preview */
     Q_INVOKABLE void resetDumpValues();
 
+    GenericDMXSource *dmxSource() const;
+
+signals:
+    void dumpValuesCountChanged();
+    void dumpChannelMaskChanged();
+
 private:
+    /** List of the values available for dumping to a Scene */
+    QList <SceneValue> m_dumpValues;
+
+    /** Bitmask representing the available channel types for
+     *  the DMX channels ready for dumping */
+    quint32 m_dumpChannelMask;
+
     /** Reference to a Generic DMX source used to handle Scenes dump */
     GenericDMXSource* m_source;
 };

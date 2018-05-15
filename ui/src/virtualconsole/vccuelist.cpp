@@ -479,6 +479,7 @@ void VCCueList::updateStepList()
         m_defCol = item->background(COL_NUM);
 
     m_tree->header()->resizeSections(QHeaderView::ResizeToContents);
+    m_tree->header()->setSectionHidden(COL_NAME, ch->type() == Function::SequenceType ? true : false);
     m_listIsUpdating = false;
 }
 
@@ -590,7 +591,10 @@ void VCCueList::notifyFunctionStarting(quint32 fid, qreal intensity)
 void VCCueList::slotFunctionRemoved(quint32 fid)
 {
     if (fid == m_chaserID)
+    {
         setChaser(Function::invalidId());
+        resetIntensityOverrideAttribute();
+    }
 }
 
 void VCCueList::slotFunctionChanged(quint32 fid)
@@ -649,6 +653,12 @@ void VCCueList::slotPlayback()
                 m_playbackButton->setStyleSheet("QToolButton{ background: #5B81FF; }");
                 m_playbackButton->setIcon(QIcon(":/player_play.png"));
             }
+
+            // check if the item selection has been changed during pause
+            int currentTreeIndex = m_tree->indexOfTopLevelItem(m_tree->currentItem());
+            if (currentTreeIndex != ch->currentStepIndex())
+                playCueAtIndex(currentTreeIndex);
+
             ch->setPause(!ch->isPaused());
         }
         else if (playbackLayout() == PlayStopPause)
@@ -719,7 +729,10 @@ void VCCueList::slotNextCue()
 
     if (ch->isRunning())
     {
-        ch->next();
+        if (ch->isPaused())
+            m_tree->setCurrentItem(m_tree->topLevelItem(getNextIndex()));
+        else
+            ch->next();
     }
     else
     {
@@ -753,7 +766,10 @@ void VCCueList::slotPreviousCue()
 
     if (ch->isRunning())
     {
-        ch->previous();
+        if (ch->isPaused())
+            m_tree->setCurrentItem(m_tree->topLevelItem(getPrevIndex()));
+        else
+            ch->previous();
     }
     else
     {
@@ -778,10 +794,11 @@ void VCCueList::slotPreviousCue()
 
 void VCCueList::slotCurrentStepChanged(int stepNumber)
 {
-    // Chaser is being edited, channels cound may change.
+    // Chaser is being edited, channels count may change.
     // Wait for the CueList to update its steps.
     if (m_updateTimer->isActive())
         return;
+
     Q_ASSERT(stepNumber < m_tree->topLevelItemCount() && stepNumber >= 0);
     QTreeWidgetItem* item = m_tree->topLevelItem(stepNumber);
     Q_ASSERT(item != NULL);
@@ -803,19 +820,33 @@ void VCCueList::slotCurrentStepChanged(int stepNumber)
         if (slValue > 255)
             slValue = 255;
 
+        int upperBound = 255 - slValue;
+        int lowerBound = qFloor(upperBound - stepVal);
         //qDebug() << "Slider value:" << m_slider1->value() << "Step range:" << (255 - slValue) << (255 - slValue - stepVal);
         // if the Step slider is already in range, then do not set its value
         // this means a user interaction is going on, either with the mouse or external controller
-        if (m_slider1->value() < (255 - slValue - stepVal) || m_slider1->value() > (255 - slValue))
+        if (m_slider1->value() < lowerBound || m_slider1->value() >= upperBound)
         {
             m_slider1->blockSignals(true);
-            m_slider1->setValue(255 - slValue);
+            m_slider1->setValue(upperBound);
             m_sl1TopLabel->setText(QString("%1").arg(slValue));
             m_slider1->blockSignals(false);
         }
     }
     else
+    {
+        /*
+        Chaser *ch = chaser();
+        if (ch != NULL)
+        {
+            int primaryValue = m_primaryLeft ? m_slider1->value() : m_slider2->value();
+
+            if (primaryValue > 0 && primaryValue < 100)
+                ch->adjustIntensity((qreal)primaryValue / 100, m_primaryIndex, Chaser::Crossfade);
+        }
+        */
         setSlidersInfo(m_primaryIndex);
+    }
     emit stepChanged(m_primaryIndex);
 }
 
@@ -940,7 +971,7 @@ void VCCueList::startChaser(int startIndex)
         return;
     ch->setStepIndex(startIndex);
     ch->setStartIntensity(getPrimaryIntensity());
-    ch->adjustAttribute(intensity(), Function::Intensity);
+    adjustFunctionIntensity(ch, intensity());
     ch->start(m_doc->masterTimer(), functionParent());
     emit functionStarting(m_chaserID);
 }
@@ -951,6 +982,7 @@ void VCCueList::stopChaser()
     if (ch == NULL)
         return;
     ch->stop(functionParent());
+    resetIntensityOverrideAttribute();
 }
 
 void VCCueList::setNextPrevBehavior(NextPrevBehavior nextPrev)
@@ -1118,9 +1150,11 @@ void VCCueList::slotSlider1ValueChanged(int value)
     {
         value = 255 - value;
         m_sl1TopLabel->setText(QString("%1").arg(value));
+
         Chaser* ch = chaser();
         if (ch == NULL || ch->stopped())
             return;
+
         int newStep = value; // by default we assume the Chaser has more than 256 steps
         if (ch->stepsCount() < 256)
         {
@@ -1133,8 +1167,10 @@ void VCCueList::slotSlider1ValueChanged(int value)
         //qDebug() << "value:" << value << "steps:" << ch->stepsCount() << "new step:" << newStep;
 
         if (newStep == ch->currentStepIndex())
-            return; // nothing to do
-
+        {
+            ch->setStepIndex(newStep);
+            return;
+        }
         ch->setStepIndex(newStep);
     }
     else
@@ -1395,7 +1431,7 @@ void VCCueList::adjustIntensity(qreal val)
     Chaser* ch = chaser();
     if (ch != NULL)
     {
-        ch->adjustAttribute(val, Function::Intensity);
+        adjustFunctionIntensity(ch, val);
 
         // Refresh intensity of current steps
         if (!ch->stopped() && slidersMode() == Crossfade)

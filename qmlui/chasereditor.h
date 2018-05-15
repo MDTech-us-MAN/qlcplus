@@ -31,8 +31,6 @@ class ChaserEditor : public FunctionEditor
 
     Q_PROPERTY(bool isSequence READ isSequence CONSTANT)
     Q_PROPERTY(QVariant stepsList READ stepsList NOTIFY stepsListChanged)
-    Q_PROPERTY(int runOrder READ runOrder WRITE setRunOrder NOTIFY runOrderChanged)
-    Q_PROPERTY(int direction READ direction WRITE setDirection NOTIFY directionChanged)
     Q_PROPERTY(int tempoType READ tempoType WRITE setTempoType NOTIFY tempoTypeChanged)
     Q_PROPERTY(int stepsFadeIn READ stepsFadeIn WRITE setStepsFadeIn NOTIFY stepsFadeInChanged)
     Q_PROPERTY(int stepsFadeOut READ stepsFadeOut WRITE setStepsFadeOut NOTIFY stepsFadeOutChanged)
@@ -47,6 +45,8 @@ public:
 
     /** Returns if the Chaser being edited is a Sequence */
     bool isSequence() const;
+
+    static void updateStepsList(Doc *doc, Chaser *chaser, ListModel *stepsList);
 
     /** Return the Chaser step list formatted as explained in m_stepsList */
     QVariant stepsList() const;
@@ -76,19 +76,21 @@ public:
     /** @reimp */
     void setPreviewEnabled(bool enable);
 
-protected:
-    void updateStepsList();
+    /** @reimp */
+    void deleteItems(QVariantList list);
 
+protected:
     /** Set the steps $param to $value.
      *  If $selectedOnly is true, $value is applied only to the selected steps,
      *  otherwise it will be applied to all the steps */
-    void setSelectedValue(Function::SpeedType type, QString param, uint value, bool selectedOnly = true);
+    void setSelectedValue(Function::PropType type, QString param, uint value, bool selectedOnly = true);
 
 protected slots:
     /** Slot invoked during Chaser playback when the step index changes */
     void slotStepChanged(int index);
 
 signals:
+    void stepsListChanged();
     void playbackIndexChanged(int playbackIndex);
 
 private:
@@ -101,18 +103,6 @@ private:
     ListModel *m_stepsList;
     /** Index of the current step being played. -1 when stopped */
     int m_playbackIndex;
-
-    /*********************************************************************
-     * Chaser playback modes
-     *********************************************************************/
-public:
-    /** Get/Set the run order of the Chaser being edited */
-    int runOrder() const;
-    void setRunOrder(int runOrder);
-
-    /** Get/Set the playback direction of the Chaser being edited */
-    int direction() const;
-    void setDirection(int direction);
 
     /*********************************************************************
      * Steps speed mode
@@ -137,10 +127,10 @@ public:
     /** Set the speed value with $type of the step at $index */
     Q_INVOKABLE void setStepSpeed(int index, int value, int type);
 
+    /** Ste the notes text of the step at $index */
+    Q_INVOKABLE void setStepNote(int index, QString text);
+
 signals:
-    void stepsListChanged();
-    void runOrderChanged(int runOrder);
-    void directionChanged(int direction);
     void tempoTypeChanged(int tempoType);
     void stepsFadeInChanged(int stepsFadeIn);
     void stepsFadeOutChanged(int stepsFadeOut);

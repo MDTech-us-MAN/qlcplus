@@ -49,13 +49,15 @@ SOURCES = qhttpserver/http_parser.c \
 HEADERS += commonjscss.h \
            webaccess.h \
            webaccessconfiguration.h \
-           webaccesssimpledesk.h
+           webaccesssimpledesk.h \
+           webaccessauth.h
 
 unix:!macx: HEADERS += webaccessnetwork.h
 
 SOURCES += webaccess.cpp \
            webaccessconfiguration.cpp \
-           webaccesssimpledesk.cpp
+           webaccesssimpledesk.cpp \
+           webaccessauth.cpp
 
 unix:!macx: SOURCES += webaccessnetwork.cpp
            
@@ -68,6 +70,7 @@ TRANSLATIONS += webaccess_nl_NL.ts
 TRANSLATIONS += webaccess_cz_CZ.ts
 TRANSLATIONS += webaccess_pt_BR.ts
 TRANSLATIONS += webaccess_ca_ES.ts
+TRANSLATIONS += webaccess_ja_JP.ts
     
 macx {
     # This must be after "TARGET = " and before target installation so that

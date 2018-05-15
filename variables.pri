@@ -4,7 +4,7 @@
 
 APPNAME    = Q Light Controller Plus
 FXEDNAME   = Fixture Definition Editor
-APPVERSION = 4.11.0 GIT
+APPVERSION = 4.11.3 GIT
 
 # Disable these if you don't want to see GIT short hash in the About Box
 #unix:REVISION = $$system(git log --pretty=format:'%h' -n 1)
@@ -103,6 +103,7 @@ unix:!macx:DATADIR = share/qlcplus
 macx:DATADIR       = Resources
 android:DATADIR    = /assets
 ios:DATADIR        =
+appimage: DATADIR  = ../share/qlcplus
 
 # User Data
 win32:USERDATADIR      = QLC+
@@ -187,6 +188,7 @@ unix:!macx:PLUGINDIR = $$LIBSDIR/qt4/plugins/qlcplus
 macx:PLUGINDIR       = PlugIns
 android:PLUGINDIR    = Plugins
 ios:PLUGINDIR        = Plugins
+appimage:PLUGINDIR   = ../lib/qt4/plugins/qlcplus
 
 # Audio Plugins
 win32:AUDIOPLUGINDIR      = $$PLUGINDIR/Audio
@@ -229,6 +231,27 @@ unix:!macx:SAMPLESDIR  = $$INSTALLROOT/$$DATADIR
 macx:SAMPLESDIR        = $$INSTALLROOT/$$DATADIR
 android:SAMPLESDIR     = $$INSTALLROOT/$$DATADIR
 ios:SAMPLESDIR         = $$INSTALLROOT/$$DATADIR
+
+# 3D Meshes
+win32:MESHESDIR      = Meshes
+unix:!macx:MESHESDIR = $$DATADIR/meshes
+macx:MESHESDIR       = $$DATADIR/Meshes
+android:MESHESDIR    = $$DATADIR/meshes
+ios:MESHESDIR        = Meshes
+
+# Color filters
+win32:COLORFILTERSDIR      = ColorFilters
+unix:!macx:COLORFILTERSDIR = $$DATADIR/colorfilters
+macx:COLORFILTERSDIR       = $$DATADIR/ColorFilters
+android:COLORFILTERSDIR    = $$DATADIR/colorfilters
+ios:COLORFILTERSDIR        = ColorFilters
+
+# User Color filters
+win32:USERCOLORFILTERSDIR      = $$USERDATADIR/ColorFilters
+unix:!macx:USERCOLORFILTERSDIR = $$USERDATADIR/colorfilters
+macx:USERCOLORFILTERSDIR       = $$USERDATADIR/ColorFilters
+android:USERCOLORFILTERSDIR    = $$USERDATADIR/colorfilters
+ios:USERCOLORFILTERSDIR        = $$USERDATADIR/ColorFilters
 
 # udev rules
 unix:!macx:UDEVRULESDIR = /etc/udev/rules.d

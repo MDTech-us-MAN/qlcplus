@@ -31,7 +31,8 @@ Rectangle
     //height: 600
     color: "black"
 
-    property int mediaCount: 0
+    // array of IDs of the contents currently playing
+    property var mediaArray: []
 
     function addVideo(vContent)
     {
@@ -39,7 +40,7 @@ Rectangle
                        {"video": vContent, "z": 1 });
         if (videoComponent.status !== Component.Ready)
             console.log("Video component is not ready !!")
-        mediaCount++
+        mediaArray.push(vContent.id)
     }
 
     function addPicture(pContent)
@@ -48,7 +49,19 @@ Rectangle
                        {"picture": pContent, "z": 2 });
         if (pictureComponent.status !== Component.Ready)
             console.log("Picture component is not ready !!")
-        mediaCount++
+        mediaArray.push(pContent.id)
+    }
+
+    function removeContent(id)
+    {
+        var cIdx = mediaArray.indexOf(id)
+        if (cIdx > -1)
+            mediaArray.splice(cIdx, 1)
+
+        console.log("Removing content with ID: " + id + ", count: " + mediaArray.length)
+
+        if (mediaArray.length == 0)
+            videoContent.destroyContext()
     }
 
     // Component representing a video content
@@ -61,6 +74,7 @@ Rectangle
             id: videoRect
             //anchors.fill: parent
             color: "black"
+            opacity: video ? video.intensity : 1.0
 
             property VideoFunction video: null
 
@@ -83,7 +97,29 @@ Rectangle
                 console.log("QML video source: " + player.source)
             }
 
-            //transform: Rotation { origin.x: width / 2; origin.y: height / 2; axis { x: 0; y: 1; z: 0 } angle: -45 }
+            transform: [
+                Rotation
+                {
+                    origin.x: width / 2
+                    origin.y: video.rotation.x > 0 ? height : 0
+                    axis { x: 1; y: 0; z: 0 }
+                    angle: video.rotation.x
+                },
+                Rotation
+                {
+                    origin.x: video.rotation.y > 0 ? 0 : width
+                    origin.y: height / 2
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: video.rotation.y
+                },
+                Rotation
+                {
+                    origin.x: width / 2
+                    origin.y: height / 2
+                    axis { x: 0; y: 0; z: 1 }
+                    angle: video.rotation.z
+                }
+            ]
 
             MediaPlayer
             {
@@ -94,9 +130,7 @@ Rectangle
                 onStopped:
                 {
                     console.log("Video stopped")
-                    mediaCount--
-                    if (mediaCount == 0)
-                        videoContent.destroyContext()
+                    ctxRoot.removeContent(video.id)
                 }
             }
 
@@ -118,14 +152,16 @@ Rectangle
         {
             property VideoFunction picture: null
 
+            opacity: picture ? picture.intensity : 1.0
+
             onPictureChanged:
             {
                 if (picture.customGeometry.width !== 0 && picture.customGeometry.height !== 0)
                 {
                     if (picture.fullscreen)
                     {
-                        x = video.customGeometry.x
-                        y = video.customGeometry.y
+                        x = picture.customGeometry.x
+                        y = picture.customGeometry.y
                     }
                     width = picture.customGeometry.width
                     height = picture.customGeometry.height
@@ -136,6 +172,30 @@ Rectangle
                 source = picture.sourceUrl.indexOf("://") !== -1 ? picture.sourceUrl : "file://" + picture.sourceUrl
                 console.log("QML picture source: " + source)
             }
+
+            transform: [
+                Rotation
+                {
+                    origin.x: width / 2
+                    origin.y: picture.rotation.x > 0 ? height : 0
+                    axis { x: 1; y: 0; z: 0 }
+                    angle: picture.rotation.x
+                },
+                Rotation
+                {
+                    origin.x: picture.rotation.y > 0 ? 0 : width
+                    origin.y: height / 2
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: picture.rotation.y
+                },
+                Rotation
+                {
+                    origin.x: width / 2
+                    origin.y: height / 2
+                    axis { x: 0; y: 0; z: 1 }
+                    angle: picture.rotation.z
+                }
+            ]
         }
     }
 }

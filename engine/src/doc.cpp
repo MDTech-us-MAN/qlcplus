@@ -220,6 +220,11 @@ QLCFixtureDefCache* Doc::fixtureDefCache() const
     return m_fixtureDefCache;
 }
 
+void Doc::setFixtureDefinitionCache(QLCFixtureDefCache *cache)
+{
+    m_fixtureDefCache = cache;
+}
+
 QLCModifiersCache* Doc::modifiersCache() const
 {
     return m_modifiersCache;
@@ -382,6 +387,9 @@ bool Doc::addFixture(Fixture* fixture, quint32 id)
 {
     Q_ASSERT(fixture != NULL);
 
+    quint32 i;
+    quint32 uni = fixture->universe();
+
     // No ID given, this method can assign one
     if (id == Fixture::invalidId())
         id = createFixtureId();
@@ -393,8 +401,8 @@ bool Doc::addFixture(Fixture* fixture, quint32 id)
     }
 
     /* Check for overlapping address */
-    for (uint i = fixture->universeAddress();
-            i < fixture->universeAddress() + fixture->channels(); i++)
+    for (i = fixture->universeAddress();
+         i < fixture->universeAddress() + fixture->channels(); i++)
     {
         if (m_addresses.contains(i))
         {
@@ -412,34 +420,43 @@ bool Doc::addFixture(Fixture* fixture, quint32 id)
             this, SLOT(slotFixtureChanged(quint32)));
 
     /* Keep track of fixture addresses */
-    for (uint i = fixture->universeAddress();
-            i < fixture->universeAddress() + fixture->channels(); i++)
+    for (i = fixture->universeAddress();
+         i < fixture->universeAddress() + fixture->channels(); i++)
     {
         m_addresses[i] = id;
     }
 
+    if (uni >= inputOutputMap()->universesCount())
+    {
+        for (i = inputOutputMap()->universesCount(); i <= uni; i++)
+            inputOutputMap()->addUniverse(i);
+    }
+
     // Add the fixture channels capabilities to the universe they belong
     QList<Universe *> universes = inputOutputMap()->claimUniverses();
-    int uni = fixture->universe();
 
-    // TODO !!! if a universe for this fixture doesn't exist, add it !!!
     QList<int> forcedHTP = fixture->forcedHTPChannels();
     QList<int> forcedLTP = fixture->forcedLTPChannels();
+    quint32 fxAddress = fixture->address();
 
-    for (quint32 i = 0 ; i < fixture->channels(); i++)
+    for (i = 0 ; i < fixture->channels(); i++)
     {
-        const QLCChannel* channel(fixture->channel(i));
+        const QLCChannel *channel(fixture->channel(i));
+
+        // Inform Universe of any HTP/LTP forcing
         if (forcedHTP.contains(i))
-            universes.at(uni)->setChannelCapability(fixture->address() + i,
-                    channel->group(), Universe::HTP);
+            universes.at(uni)->setChannelCapability(fxAddress + i, channel->group(), Universe::HTP);
         else if (forcedLTP.contains(i))
-            universes.at(uni)->setChannelCapability(fixture->address() + i,
-                    channel->group(), Universe::LTP);
+            universes.at(uni)->setChannelCapability(fxAddress + i, channel->group(), Universe::LTP);
         else
-            universes.at(uni)->setChannelCapability(fixture->address() + i,
-                    channel->group());
+            universes.at(uni)->setChannelCapability(fxAddress + i, channel->group());
+
+        // Apply the default value BEFORE modifiers
+        universes.at(uni)->setChannelDefaultValue(fxAddress + i, channel->defaultValue());
+
+        // Apply a channel modifier, if defined
         ChannelModifier *mod = fixture->channelModifier(i);
-        universes.at(uni)->setChannelModifier(fixture->address() + i, mod);
+        universes.at(uni)->setChannelModifier(fxAddress + i, mod);
     }
     inputOutputMap()->releaseUniverses(true);
 
@@ -514,7 +531,20 @@ bool Doc::replaceFixtures(QList<Fixture*> newFixturesList)
             (fixture->fixtureDef()->manufacturer() == KXMLFixtureGeneric &&
              fixture->fixtureDef()->model() == KXMLFixtureGeneric))
         {
+            // Generic dimmers just need to know the number of channels
             newFixture->setChannels(fixture->channels());
+        }
+        else if (fixture->fixtureDef() == NULL ||
+            (fixture->fixtureDef()->manufacturer() == KXMLFixtureGeneric &&
+             fixture->fixtureDef()->model() == KXMLFixtureRGBPanel))
+        {
+            // RGB Panels definitions are not cached or shared, so
+            // let's make a deep copy of them
+            QLCFixtureDef *fixtureDef = new QLCFixtureDef();
+            *fixtureDef = *fixture->fixtureDef();
+            QLCFixtureMode *mode = new QLCFixtureMode(fixtureDef);
+            *mode = *fixture->fixtureMode();
+            newFixture->setFixtureDefinition(fixtureDef, mode);
         }
         else
         {
@@ -547,58 +577,45 @@ bool Doc::replaceFixtures(QList<Fixture*> newFixturesList)
 
 bool Doc::updateFixtureChannelCapabilities(quint32 id, QList<int> forcedHTP, QList<int> forcedLTP)
 {
-    if (m_fixtures.contains(id) == true)
+    if (m_fixtures.contains(id) == false)
+        return false;
+
+    Fixture* fixture = m_fixtures[id];
+    // get exclusive access to the universes list
+    QList<Universe *> universes = inputOutputMap()->claimUniverses();
+    Universe *universe = universes.at(fixture->universe());
+    quint32 fxAddress = fixture->address();
+
+    // Set forced HTP channels
+    fixture->setForcedHTPChannels(forcedHTP);
+
+    // Set forced LTP channels
+    fixture->setForcedLTPChannels(forcedLTP);
+
+    // Update the Fixture Universe with the current channel states
+    for (quint32 i = 0 ; i < fixture->channels(); i++)
     {
-        Fixture* fixture = m_fixtures[id];
-        // get exclusive access to the universes list
-        QList<Universe *> universes = inputOutputMap()->claimUniverses();
-        int uni = fixture->universe();
+        const QLCChannel *channel(fixture->channel(i));
 
-        // Set forced HTP channels
-        if (!forcedHTP.isEmpty())
-        {
-            fixture->setForcedHTPChannels(forcedHTP);
+        // Inform Universe of any HTP/LTP forcing
+        if (forcedHTP.contains(i))
+            universe->setChannelCapability(fxAddress + i, channel->group(), Universe::HTP);
+        else if (forcedLTP.contains(i))
+            universe->setChannelCapability(fxAddress + i, channel->group(), Universe::LTP);
+        else
+            universe->setChannelCapability(fxAddress + i, channel->group());
 
-            for(int i = 0; i < forcedHTP.count(); i++)
-            {
-                int chIdx = forcedHTP.at(i);
-                const QLCChannel* channel(fixture->channel(chIdx));
+        // Apply the default value BEFORE modifiers
+        universe->setChannelDefaultValue(fxAddress + i, channel->defaultValue());
 
-                if (channel->group() == QLCChannel::Intensity)
-                    universes.at(uni)->setChannelCapability(fixture->address() + chIdx,
-                                                            channel->group(),
-                                                            Universe::ChannelType(Universe::HTP | Universe::Intensity));
-                else
-                    universes.at(uni)->setChannelCapability(fixture->address() + chIdx,
-                                                            channel->group(),
-                                                            Universe::HTP);
-            }
-        }
-        // Set forced LTP channels
-        if (!forcedLTP.isEmpty())
-        {
-            fixture->setForcedLTPChannels(forcedLTP);
-
-            for(int i = 0; i < forcedLTP.count(); i++)
-            {
-                int chIdx = forcedLTP.at(i);
-                const QLCChannel* channel(fixture->channel(chIdx));
-                universes.at(uni)->setChannelCapability(fixture->address() + chIdx, channel->group(), Universe::LTP);
-            }
-        }
-
-        // set channels modifiers
-        for (quint32 i = 0; i < fixture->channels(); i++)
-        {
-            ChannelModifier *mod = fixture->channelModifier(i);
-            universes.at(uni)->setChannelModifier(fixture->address() + i, mod);
-        }
-        inputOutputMap()->releaseUniverses(true);
-
-        return true;
+        // Apply a channel modifier, if defined
+        ChannelModifier *mod = fixture->channelModifier(i);
+        universe->setChannelModifier(fxAddress + i, mod);
     }
 
-    return false;
+    inputOutputMap()->releaseUniverses(true);
+
+    return true;
 }
 
 QList<Fixture*> const& Doc::fixtures() const
@@ -1102,71 +1119,6 @@ MonitorProperties *Doc::monitorProperties()
         m_monitorProps = new MonitorProperties();
 
     return m_monitorProps;
-}
-
-QPointF Doc::getAvailable2DPosition(QRectF &fxRect)
-{
-    if (m_monitorProps == NULL)
-        return QPointF(0, 0);
-
-    qreal xPos = fxRect.x(), yPos = fxRect.y();
-    qreal maxYOffset = 0;
-
-    QSize gridSize = m_monitorProps->gridSize();
-    float gridUnits = 1000.0;
-    if (m_monitorProps->gridUnits() == MonitorProperties::Feet)
-        gridUnits = 304.8;
-
-    QRectF gridArea(0, 0, (float)gridSize.width() * gridUnits, (float)gridSize.height() * gridUnits);
-
-    qreal origWidth = fxRect.width();
-    qreal origHeight = fxRect.height();
-
-    foreach(Fixture* fixture, fixtures())
-    {
-        if (m_monitorProps->hasFixturePosition(fixture->id()) == false)
-            continue;
-
-        QVector3D fxPos = m_monitorProps->fixturePosition(fixture->id());
-        QLCFixtureMode *fxMode = fixture->fixtureMode();
-
-        qreal itemXPos = fxPos.x();
-        qreal itemYPos = fxPos.y();
-        qreal itemWidth = 0, itemHeight = 0;
-        if (fxMode != NULL)
-        {
-            itemWidth = fxMode->physical().width();
-            itemHeight = fxMode->physical().height();
-        }
-        if (itemWidth == 0) itemWidth = 300;
-        if (itemHeight == 0) itemHeight = 300;
-
-        // store the next Y row in case we need to lower down
-        if (itemYPos + itemHeight > maxYOffset )
-            maxYOffset = itemYPos + itemHeight;
-
-        QRectF itemRect(itemXPos, itemYPos, itemWidth, itemHeight);
-
-        //qDebug() << "item rect:" << itemRect << "fxRect:" << fxRect;
-
-        if (fxRect.intersects(itemRect) == true)
-        {
-            xPos = itemXPos + itemWidth + 50; //add an extra 50mm spacing
-            if (xPos + fxRect.width() > gridArea.width())
-            {
-                xPos = 0;
-                yPos = maxYOffset + 50;
-                maxYOffset = 0;
-            }
-            fxRect.setX(xPos);
-            fxRect.setY(yPos);
-            // restore width and height as setX and setY mess them
-            fxRect.setWidth(origWidth);
-            fxRect.setHeight(origHeight);
-        }
-    }
-
-    return QPointF(xPos, yPos);
 }
 
 /*****************************************************************************

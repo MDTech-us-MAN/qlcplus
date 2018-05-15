@@ -31,7 +31,7 @@ Rectangle
 
     property VCSlider widgetRef: null
     property Function func
-    property int funcID: widgetRef ? widgetRef.playbackFunction : -1
+    property int funcID: widgetRef ? widgetRef.controlledFunction : -1
     property int gridItemsHeight: UISettings.listItemHeight
 
     onFuncIDChanged: func = functionManager.getFunction(funcID)
@@ -161,15 +161,15 @@ Rectangle
                     implicitWidth: UISettings.iconSizeMedium
                     implicitHeight: implicitWidth
                     ButtonGroup.group: sliderModeGroup
-                    checked: widgetRef ? widgetRef.sliderMode === VCSlider.Playback : false
-                    onClicked: if (checked && widgetRef) widgetRef.sliderMode = VCSlider.Playback
+                    checked: widgetRef ? widgetRef.sliderMode === VCSlider.Adjust : false
+                    onClicked: if (checked && widgetRef) widgetRef.sliderMode = VCSlider.Adjust
                 }
 
                 RobotoText
                 {
                     height: gridItemsHeight
                     Layout.fillWidth: true
-                    label: qsTr("Playback")
+                    label: qsTr("Adjust")
                 }
 
                 // row 2
@@ -204,30 +204,13 @@ Rectangle
                     Layout.fillWidth: true
                     label: qsTr("Grand Master")
                 }
-
-                // row 3
-                CustomCheckBox
-                {
-                    implicitWidth: UISettings.iconSizeMedium
-                    implicitHeight: implicitWidth
-                    ButtonGroup.group: sliderModeGroup
-                    checked: widgetRef ? widgetRef.sliderMode === VCSlider.Attribute : false
-                    onClicked: if (checked && widgetRef) widgetRef.sliderMode = VCSlider.Attribute
-                }
-
-                RobotoText
-                {
-                    height: gridItemsHeight
-                    Layout.fillWidth: true
-                    label: qsTr("Attribute")
-                }
               }
         } // end of SectionBox
 
         SectionBox
         {
-            visible: widgetRef ? widgetRef.sliderMode === VCSlider.Playback : false
-            sectionLabel: qsTr("Playback Function")
+            visible: widgetRef ? widgetRef.sliderMode === VCSlider.Adjust : false
+            sectionLabel: qsTr("Function Control")
 
             sectionContents:
               GridLayout
@@ -254,12 +237,26 @@ Rectangle
                         anchors.right: parent.right
                         imgSource: "qrc:/reset.svg"
                         tooltip: qsTr("Detach the current function")
-                        onClicked: widgetRef.playbackFunction = -1
+                        onClicked: widgetRef.controlledFunction = -1
                     }
                 }
 
+                // row 2
+                RobotoText
+                {
+                    height: gridItemsHeight
+                    label: qsTr("Attribute")
+                }
+
+                CustomComboBox
+                {
+                    Layout.fillWidth: true
+                    model: widgetRef ? widgetRef.availableAttributes : null
+                    currentIndex: widgetRef ? widgetRef.controlledAttribute : 0
+                    onCurrentIndexChanged: if (widgetRef) widgetRef.controlledAttribute = currentIndex
+                }
               } // GridLayout
-        } // SectionBox Playback mode
+        } // SectionBox Function control
 
         SectionBox
         {
@@ -278,34 +275,6 @@ Rectangle
                   RobotoText
                   {
                       height: gridItemsHeight
-                      label: qsTr("Lower limit")
-                  }
-                  CustomSpinBox
-                  {
-                      Layout.fillWidth: true
-                      from: 0
-                      to: 255
-                      value: widgetRef ? widgetRef.levelLowLimit : 0
-                      onValueChanged: if (widgetRef) widgetRef.levelLowLimit = value
-                  }
-                  // row 2
-                  RobotoText
-                  {
-                      height: gridItemsHeight
-                      label: qsTr("Upper limit")
-                  }
-                  CustomSpinBox
-                  {
-                      Layout.fillWidth: true
-                      from: 0
-                      to: 255
-                      value: widgetRef ? widgetRef.levelHighLimit : 0
-                      onValueChanged: if (widgetRef) widgetRef.levelHighLimit = value
-                  }
-                  // row 3
-                  RobotoText
-                  {
-                      height: gridItemsHeight
                       label: qsTr("Channels")
                   }
                   RobotoText
@@ -316,7 +285,6 @@ Rectangle
 
                       IconButton
                       {
-                          id: serviceEntry
                           z: 2
                           anchors.right: parent.right
                           height: gridItemsHeight
@@ -344,11 +312,34 @@ Rectangle
                       }
                   }
 
+                  // row 2
+                  RobotoText
+                  {
+                      height: gridItemsHeight
+                      label: qsTr("Click & Go button")
+                  }
+
+                  CustomComboBox
+                  {
+                      ListModel
+                      {
+                          id: cngModel
+                          ListElement { mLabel: qsTr("None"); mValue: VCSlider.CnGNone }
+                          ListElement { mLabel: qsTr("RGB/CMY"); mValue: VCSlider.CnGColors }
+                          ListElement { mLabel: qsTr("Gobo/Effect/Macro"); mValue: VCSlider.CnGPreset }
+                      }
+
+                      Layout.fillWidth: true
+                      model: cngModel
+                      currentIndex: widgetRef ? widgetRef.clickAndGoType : 0
+                      onCurrentIndexChanged: if (widgetRef) widgetRef.clickAndGoType = currentIndex
+                  }
+
+                  // row 3
                   CustomCheckBox
                   {
                       implicitWidth: UISettings.iconSizeMedium
                       implicitHeight: implicitWidth
-                      autoExclusive: false
                       checked: widgetRef ? widgetRef.monitorEnabled : true
                       onClicked: if (widgetRef) widgetRef.monitorEnabled = checked
                   }
@@ -359,6 +350,51 @@ Rectangle
                   }
               }
         } // SectionBox Level mode
+
+        SectionBox
+        {
+            visible: widgetRef ? (widgetRef.sliderMode === VCSlider.Level || widgetRef.sliderMode === VCSlider.Adjust) : false
+            sectionLabel: qsTr("Values range")
+
+            sectionContents:
+              GridLayout
+              {
+                  width: parent.width
+                  columns: 2
+                  columnSpacing: 5
+                  rowSpacing: 4
+
+                  // row 1
+                  RobotoText
+                  {
+                      height: gridItemsHeight
+                      label: qsTr("Upper limit")
+                  }
+                  CustomSpinBox
+                  {
+                      Layout.fillWidth: true
+                      from: widgetRef && widgetRef.sliderMode === VCSlider.Adjust ? widgetRef.attributeMinValue : 0
+                      to: widgetRef && widgetRef.sliderMode === VCSlider.Adjust ? widgetRef.attributeMaxValue : 255
+                      value: widgetRef ? widgetRef.rangeHighLimit : 0
+                      onValueModified: if (widgetRef) widgetRef.rangeHighLimit = value
+                  }
+
+                  // row 2
+                  RobotoText
+                  {
+                      height: gridItemsHeight
+                      label: qsTr("Lower limit")
+                  }
+                  CustomSpinBox
+                  {
+                      Layout.fillWidth: true
+                      from: widgetRef && widgetRef.sliderMode === VCSlider.Adjust ? widgetRef.attributeMinValue : 0
+                      to: widgetRef && widgetRef.sliderMode === VCSlider.Adjust ? widgetRef.attributeMaxValue : 255
+                      value: widgetRef ? widgetRef.rangeLowLimit : 0
+                      onValueModified: if (widgetRef) widgetRef.rangeLowLimit = value
+                  }
+              }
+        } // SectionBox Values range
 
         SectionBox
         {

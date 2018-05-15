@@ -353,13 +353,8 @@ bool Chaser::saveXML(QXmlStreamWriter *doc)
     doc->writeEndElement();
 
     /* Steps */
-    int stepNumber = 0;
-    QListIterator <ChaserStep> it(m_steps);
-    while (it.hasNext() == true)
-    {
-        ChaserStep step(it.next());
-        step.saveXML(doc, stepNumber++, false);
-    }
+    for (int i = 0; i < m_steps.count(); i++)
+        m_steps.at(i).saveXML(doc, i, false);
 
     /* End the <Function> tag */
     doc->writeEndElement();
@@ -429,7 +424,7 @@ bool Chaser::loadXML(QXmlStreamReader &root)
             ChaserStep step;
             int stepNumber = -1;
 
-            if (step.loadXML(root, stepNumber) == true)
+            if (step.loadXML(root, stepNumber, doc()) == true)
             {
                 if (stepNumber >= m_steps.size())
                     m_steps.append(step);
@@ -610,6 +605,16 @@ bool Chaser::contains(quint32 functionId)
     return false;
 }
 
+QList<quint32> Chaser::components()
+{
+    QList<quint32> ids;
+
+    foreach(ChaserStep step, m_steps)
+        ids.append(step.fid);
+
+    return ids;
+}
+
 /*****************************************************************************
  * Running
  *****************************************************************************/
@@ -688,14 +693,17 @@ void Chaser::postRun(MasterTimer* timer, QList<Universe *> universes)
  * Intensity
  *****************************************************************************/
 
-void Chaser::adjustAttribute(qreal fraction, int attributeIndex)
+int Chaser::adjustAttribute(qreal fraction, int attributeId)
 {
-    if (attributeIndex == Intensity)
+    int attrIndex = Function::adjustAttribute(fraction, attributeId);
+
+    if (attrIndex == Intensity)
     {
         QMutexLocker runnerLocker(&m_runnerMutex);
         QMutexLocker stepListLocker(&m_stepListMutex);
         if (m_runner != NULL)
-            m_runner->adjustIntensity(fraction);
+            m_runner->adjustIntensity(getAttributeValue(Function::Intensity));
     }
-    Function::adjustAttribute(fraction, attributeIndex);
+
+    return attrIndex;
 }

@@ -21,6 +21,8 @@
 #define VIDEO_H
 
 #include <QColor>
+#include <QRect>
+#include <QVector3D>
 #include <QVariant>
 
 #include "function.h"
@@ -37,13 +39,23 @@ class Video : public Function
     Q_DISABLE_COPY(Video)
 
     Q_PROPERTY(QString sourceUrl READ sourceUrl WRITE setSourceUrl NOTIFY sourceChanged)
+    Q_PROPERTY(qreal intensity READ intensity NOTIFY intensityChanged)
     Q_PROPERTY(QRect customGeometry READ customGeometry WRITE setCustomGeometry NOTIFY customGeometryChanged)
+    Q_PROPERTY(QVector3D rotation READ rotation WRITE setRotation NOTIFY rotationChanged)
     Q_PROPERTY(bool fullscreen READ fullscreen WRITE setFullscreen)
 
     /*********************************************************************
      * Initialization
      *********************************************************************/
 public:
+    enum VideoAttr
+    {
+        Intensity = Function::Intensity,
+        XRotation,
+        YRotation,
+        ZRotation,
+    };
+
     Video(Doc* doc);
     virtual ~Video();
 
@@ -98,6 +110,10 @@ public:
     QRect customGeometry();
     void setCustomGeometry(QRect rect);
 
+    /** Get/Set the video XYZ rotation as a QVector3D variable */
+    QVector3D rotation() const;
+    void setRotation(QVector3D rotation);
+
     /** Get/Set the audio codec for this Video Function */
     QString audioCodec();
     void setAudioCodec(QString codec);
@@ -121,11 +137,17 @@ public:
     bool fullscreen();
     void setFullscreen(bool enable);
 
-    void adjustAttribute(qreal fraction, int attributeIndex);
+    /** Get the current Video intensity */
+    qreal intensity();
+
+    /** @reimp */
+    int adjustAttribute(qreal fraction, int attributeId);
 
 signals:
     void sourceChanged(QString url);
+    void intensityChanged();
     void customGeometryChanged(QRect rect);
+    void rotationChanged(QVector3D rotation);
     void totalTimeChanged(qint64);
     void metaDataChanged(QString key, QVariant data);
     void requestPlayback();
@@ -147,6 +169,8 @@ private:
     /** If set, specifies the custom geometry (position and size)
      *  to be used when rendering the video */
     QRect m_customGeometry;
+    /** The video XYZ rotation as a 3D vector */
+    QVector3D m_rotation;
     /** Index of the screen where to render the video */
     int m_screen;
     /** Flag that indicates if the video has to go fullscreen */
@@ -180,7 +204,6 @@ public:
 
     /** @reimpl */
     void postRun(MasterTimer* timer, QList<Universe *> universes);
-
 };
 
 /** @} */

@@ -46,6 +46,7 @@ Rectangle
     property bool isSelected: false
     property bool showEnablers: false
     property bool sceneConsole: false
+    property bool externalChange: false
 
     signal doubleClicked
     signal clicked
@@ -54,6 +55,7 @@ Rectangle
 
     onValuesChanged:
     {
+        externalChange = true
         for (var i = 0; i < values.length; i++)
         {
             //console.log("Value " + i + " = " + values[i]);
@@ -62,13 +64,22 @@ Rectangle
             else
                 channelsRpt.itemAt(i).dmxValue = (values[i] / 255) * 100
         }
+        externalChange = false
     }
 
     function setChannelValue(channel, value)
     {
         if (showEnablers == true)
             channelsRpt.itemAt(channel).isEnabled = true
+        externalChange = true
         channelsRpt.itemAt(channel).dmxValue = value
+        externalChange = false
+    }
+
+    function updateChannels()
+    {
+        for (var i = 0; i < channelsRpt.count; i++)
+            channelsRpt.itemAt(i).updateChannel()
     }
 
     Column
@@ -80,7 +91,7 @@ Rectangle
         Rectangle
         {
             id: fxNameBar
-            color: "#111"
+            color: UISettings.bgStronger
             width: parent.width
             height: UISettings.listItemHeight
             clip: true
@@ -145,18 +156,21 @@ Rectangle
                         property bool dmxMode: true
                         property bool isEnabled: showEnablers ? false : true
 
+                        function updateChannel()
+                        {
+                            chIcon.source = fixtureObj ? fixtureManager.channelIcon(fixtureObj.id, index) : ""
+                        }
+
                         onDmxValueChanged:
                         {
-                            // if the slider is not pressed, then it means
-                            // it is just monitoring values, with no user intervention
-                            if (slider.pressed == false && slider.touchPressed == false)
+                            if (externalChange == true)
                                 return
 
                             var val = dmxMode ? dmxValue : dmxValue * 2.55
                             if (sceneConsole == false)
                                 fixtureManager.setChannelValue(fixtureObj.id, index, val)
                             else
-                                sceneEditor.setChannelValue(fixtureObj.id, index, val)
+                                functionManager.setChannelValue(fixtureObj.id, index, val)
 
                             consoleRoot.valueChanged(fixtureObj.id, index, val)
                         }
@@ -174,6 +188,13 @@ Rectangle
                             visible: showEnablers ? !isEnabled : false
                         }
 
+                        Rectangle
+                        {
+                            width: parent.width
+                            height: (showEnablers ? enableCheckBox.height : 0) + chIcon.height + 1
+                            color: UISettings.bgLight
+                        }
+
                         Column
                         {
                             id: chColumn
@@ -186,6 +207,7 @@ Rectangle
                             Rectangle
                             {
                                 id: enableCheckBox
+                                x: (parent.width - width) / 2
                                 width: UISettings.iconSizeMedium
                                 height: UISettings.iconSizeMedium / 2
                                 radius: 2
@@ -204,7 +226,7 @@ Rectangle
                                         if (sceneConsole == true)
                                         {
                                             if (isEnabled == true)
-                                                sceneEditor.setChannelValue(fixtureObj.id, index, 0)
+                                                functionManager.setChannelValue(fixtureObj.id, index, dmxMode ? dmxValue : dmxValue * 2.55)
                                             else
                                                 sceneEditor.unsetChannel(fixtureObj.id, index)
                                         }
@@ -222,6 +244,7 @@ Rectangle
                                 sourceSize: Qt.size(width, height)
                                 source: fixtureObj ? fixtureManager.channelIcon(fixtureObj.id, index) : ""
                             }
+
                             QLCPlusFader
                             {
                                 id: slider
@@ -238,15 +261,14 @@ Rectangle
                                 {
                                     if (sceneConsole)
                                     {
-                                        if (sceneEditor.hasChannel(fixtureObj.id, index) === true)
-                                        {
-                                            if (showEnablers)
-                                                isEnabled = true
-                                            dmxValue = sceneEditor.channelValue(fixtureObj.id, index)
-                                        }
+                                        if (showEnablers && sceneEditor.hasChannel(fixtureObj.id, index) === true)
+                                            isEnabled = true
+
+                                        dmxValue = sceneEditor.channelValue(fixtureObj.id, index)
                                     }
                                 }
                             }
+
                             CustomSpinBox
                             {
                                 id: chValueSpin
@@ -256,6 +278,7 @@ Rectangle
                                 to: dmxMode ? 255 : 100
                                 suffix: dmxMode ? "" : "%"
                                 showControls: false
+                                padding: 0
                                 horizontalAlignment: Qt.AlignHCenter
                                 onValueChanged: dmxValue = value
                             }

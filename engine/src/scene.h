@@ -129,6 +129,9 @@ public:
      */
     QList <SceneValue> values() const;
 
+    /** @reimp */
+    QList<quint32> components();
+
     /**
      * Try to retrieve a RGB/CMY color if the Scene has RGB/CMY channels set.
      * A fixture ID can be specified to retrieve a single fixture color.
@@ -249,7 +252,7 @@ private:
      *********************************************************************/
 public:
     /** @reimp */
-    void adjustAttribute(qreal fraction, int attributeIndex);
+    int adjustAttribute(qreal fraction, int attributeId);
 
     /*************************************************************************
      * Blend mode

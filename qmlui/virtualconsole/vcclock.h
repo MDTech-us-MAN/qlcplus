@@ -103,10 +103,10 @@ public:
     virtual ~VCClock();
 
     /** @reimp */
-    void setID(quint32 id);
+    QString defaultCaption();
 
     /** @reimp */
-    QString defaultCaption();
+    void setupLookAndFeel(qreal pixelDensity, int page);
 
     /** @reimp */
     void render(QQuickView *view, QQuickItem *parent);
@@ -169,7 +169,10 @@ private:
 public:
     bool enableSchedule() const;
     void setEnableSchedule(bool enableSchedule);
+
     QVariantList scheduleList();
+    QList<VCClockSchedule*> schedules();
+
     void addSchedule(VCClockSchedule *schedule);
     Q_INVOKABLE void addSchedules(QVariantList idsList);
     Q_INVOKABLE void removeSchedule(int index);

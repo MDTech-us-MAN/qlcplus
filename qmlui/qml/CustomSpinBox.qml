@@ -34,6 +34,7 @@ SpinBox
     from: 0
     to: 255
     clip: true
+    wheelEnabled: true
 
     property bool showControls: true
     property string suffix: ""
@@ -48,18 +49,6 @@ SpinBox
         if (focus) contentItem.selectAll()
     }
 
-    MouseArea
-    {
-        anchors.fill: parent
-        onWheel:
-        {
-            if (wheel.angleDelta.y > 0)
-                control.value++
-            else
-                control.value--
-        }
-    }
-
     textFromValue: function(value) {
         return value + suffix
     }
@@ -68,9 +57,18 @@ SpinBox
         return parseInt(text.replace(suffix, ""))
     }
 
+    Rectangle
+    {
+        anchors.fill: parent
+        z: 3
+        color: "black"
+        opacity: 0.6
+        visible: !parent.enabled
+    }
+
     background: Rectangle {
         implicitWidth: parent.width
-        color: UISettings.bgMedium
+        color: UISettings.bgControl
         border.color: "#222"
         radius: 3
     }
@@ -105,8 +103,9 @@ SpinBox
         {
             anchors.centerIn: parent
             source: "qrc:/arrow-up.svg"
+            width: height * 2
             height: parent.height - 8
-            sourceSize: Qt.size(parent.width, parent.height - 8)
+            sourceSize: Qt.size(width, height)
         }
     }
 
@@ -124,8 +123,9 @@ SpinBox
             anchors.centerIn: parent
             source: "qrc:/arrow-up.svg"
             rotation: 180
+            width: height * 2
             height: parent.height - 8
-            sourceSize: Qt.size(parent.width, parent.height - 8)
+            sourceSize: Qt.size(width, height)
         }
     }
 }

@@ -45,9 +45,16 @@ FixtureBrowser::FixtureBrowser(QQuickView *view, Doc *doc, QObject *parent)
     Q_ASSERT(m_doc != NULL);
     Q_ASSERT(m_view != NULL);
 
+    m_view->rootContext()->setContextProperty("fixtureBrowser", this);
+
     m_searchTree = new TreeModel(this);
     QQmlEngine::setObjectOwnership(m_searchTree, QQmlEngine::CppOwnership);
     m_searchTree->enableSorting(true);
+}
+
+FixtureBrowser::~FixtureBrowser()
+{
+    m_view->rootContext()->setContextProperty("fixtureBrowser", NULL);
 }
 
 QStringList FixtureBrowser::manufacturers()
@@ -101,6 +108,7 @@ void FixtureBrowser::setSelectedModel(QString selectedModel)
     m_selectedModel = selectedModel;
     setFixtureName(m_selectedModel);
     m_selectedMode = QString();
+    m_modeChannelsCount = 1;
     emit selectedModelChanged(selectedModel);
     emit modesListChanged();
     emit modeChannelsCountChanged();

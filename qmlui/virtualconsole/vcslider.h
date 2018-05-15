@@ -48,8 +48,10 @@
 #define KXMLQLCVCSliderChannel "Channel"
 #define KXMLQLCVCSliderChannelFixture "Fixture"
 
-#define KXMLQLCVCSliderPlayback "Playback"
-#define KXMLQLCVCSliderPlaybackFunction "Function"
+#define KXMLQLCVCSliderPlayback "Playback" // LEGACY
+#define KXMLQLCVCSliderAdjust "Adjust"
+#define KXMLQLCVCSliderAdjustAttribute "Attribute"
+#define KXMLQLCVCSliderControlledFunction "Function"
 
 class FunctionParent;
 
@@ -63,20 +65,32 @@ class VCSlider : public VCWidget, public DMXSource
     Q_PROPERTY(ValueDisplayStyle valueDisplayStyle READ valueDisplayStyle WRITE setValueDisplayStyle NOTIFY valueDisplayStyleChanged)
     Q_PROPERTY(bool invertedAppearance READ invertedAppearance WRITE setInvertedAppearance NOTIFY invertedAppearanceChanged)
     Q_PROPERTY(SliderMode sliderMode READ sliderMode WRITE setSliderMode NOTIFY sliderModeChanged)
-    Q_PROPERTY(int value READ value WRITE setValue NOTIFY valueChanged)
 
-    Q_PROPERTY(int levelLowLimit READ levelLowLimit WRITE setLevelLowLimit NOTIFY levelLowLimitChanged)
-    Q_PROPERTY(int levelHighLimit READ levelHighLimit WRITE setLevelHighLimit NOTIFY levelHighLimitChanged)
+    Q_PROPERTY(int value READ value WRITE setValue NOTIFY valueChanged)
+    Q_PROPERTY(qreal rangeLowLimit READ rangeLowLimit WRITE setRangeLowLimit NOTIFY rangeLowLimitChanged)
+    Q_PROPERTY(qreal rangeHighLimit READ rangeHighLimit WRITE setRangeHighLimit NOTIFY rangeHighLimitChanged)
+
     Q_PROPERTY(bool monitorEnabled READ monitorEnabled WRITE setMonitorEnabled NOTIFY monitorEnabledChanged)
     Q_PROPERTY(int monitorValue READ monitorValue NOTIFY monitorValueChanged)
     Q_PROPERTY(bool isOverriding READ isOverriding WRITE setIsOverriding NOTIFY isOverridingChanged)
 
-    Q_PROPERTY(quint32 playbackFunction READ playbackFunction WRITE setPlaybackFunction NOTIFY playbackFunctionChanged)
+    Q_PROPERTY(quint32 controlledFunction READ controlledFunction WRITE setControlledFunction NOTIFY controlledFunctionChanged)
+    Q_PROPERTY(int controlledAttribute READ controlledAttribute WRITE setControlledAttribute NOTIFY controlledAttributeChanged)
+    Q_PROPERTY(QStringList availableAttributes READ availableAttributes NOTIFY availableAttributesChanged)
+    Q_PROPERTY(qreal attributeMinValue READ attributeMinValue NOTIFY attributeMinValueChanged)
+    Q_PROPERTY(qreal attributeMaxValue READ attributeMaxValue NOTIFY attributeMaxValueChanged)
 
     Q_PROPERTY(GrandMaster::ValueMode grandMasterValueMode READ grandMasterValueMode WRITE setGrandMasterValueMode NOTIFY grandMasterValueModeChanged)
     Q_PROPERTY(GrandMaster::ChannelMode grandMasterChannelMode READ grandMasterChannelMode WRITE setGrandMasterChannelMode NOTIFY grandMasterChannelModeChanged)
 
     Q_PROPERTY(QVariant groupsTreeModel READ groupsTreeModel NOTIFY groupsTreeModelChanged)
+    Q_PROPERTY(QString searchFilter READ searchFilter WRITE setSearchFilter NOTIFY searchFilterChanged)
+
+    Q_PROPERTY(ClickAndGoType clickAndGoType READ clickAndGoType WRITE setClickAndGoType NOTIFY clickAndGoTypeChanged)
+    Q_PROPERTY(QColor cngPrimaryColor READ cngPrimaryColor NOTIFY cngPrimaryColorChanged)
+    Q_PROPERTY(QColor cngSecondaryColor READ cngSecondaryColor NOTIFY cngSecondaryColorChanged)
+    Q_PROPERTY(QVariantList clickAndGoPresetsList READ clickAndGoPresetsList NOTIFY clickAndGoPresetsListChanged)
+    Q_PROPERTY(QString cngPresetResource READ cngPresetResource NOTIFY cngPresetResourceChanged)
 
     /*********************************************************************
      * Initialization
@@ -86,10 +100,10 @@ public:
     virtual ~VCSlider();
 
     /** @reimp */
-    void setID(quint32 id);
+    QString defaultCaption();
 
     /** @reimp */
-    QString defaultCaption();
+    void setupLookAndFeel(qreal pixelDensity, int page);
 
     /** @reimp */
     void render(QQuickView *view, QQuickItem *parent);
@@ -164,7 +178,7 @@ protected:
      * Slider Mode
      *********************************************************************/
 public:
-    enum SliderMode { Level, Playback, Submaster, GrandMaster, Attribute };
+    enum SliderMode { Level, Adjust, Submaster, GrandMaster };
     Q_ENUM(SliderMode)
 
 public:
@@ -189,24 +203,33 @@ public:
     int value() const;
     void setValue(int value, bool setDMX = true, bool updateFeedback = true);
 
+    /** Set/Get the lower limit for the slider values */
+    void setRangeLowLimit(qreal value);
+    qreal rangeLowLimit() const;
+
+    /** Set/Get the higher limit for the slider values */
+    void setRangeHighLimit(qreal value);
+    qreal rangeHighLimit() const;
+
+protected:
+
+    qreal sliderValueToAttributeValue(int value);
+    qreal attributeValueToSliderValue(qreal value);
+
 signals:
     void valueChanged(int value);
+    void rangeLowLimitChanged();
+    void rangeHighLimitChanged();
 
 protected:
     int m_value;
+    qreal m_rangeLowLimit;
+    qreal m_rangeHighLimit;
 
     /*********************************************************************
      * Level mode
      *********************************************************************/
 public:
-    /** Set/Get the lower limit for levels set through the slider */
-    void setLevelLowLimit(uchar value);
-    uchar levelLowLimit() const;
-
-    /** Set/Get high limit for levels set through the slider */
-    void setLevelHighLimit(uchar value);
-    uchar levelHighLimit() const;
-
     /** Get/Set the channels monitor status when in Level mode */
     void setMonitorEnabled(bool enable);
     bool monitorEnabled() const;
@@ -245,26 +268,24 @@ public:
     /** Returns the data model to display a tree of FixtureGroups/Fixtures */
     QVariant groupsTreeModel();
 
+    /** Get/Set a string to filter Group/Fixture/Channel names */
+    QString searchFilter() const;
+    void setSearchFilter(QString searchFilter);
+
 protected slots:
     void slotTreeDataChanged(TreeModelItem *item, int role, const QVariant &value);
 
-private:
-    /** Update the tree of groups/fixtures/channels */
-    void updateFixtureTree(Doc *doc, TreeModel *treeModel);
-
 signals:
-    void levelLowLimitChanged();
-    void levelHighLimitChanged();
     void monitorEnabledChanged();
     void monitorValueChanged();
     void isOverridingChanged();
     /** Notify the listeners that the fixture tree model has changed */
     void groupsTreeModelChanged();
+    /** Notify the listeners that the search filter has changed */
+    void searchFilterChanged();
 
 protected:
     QList <SceneValue> m_levelChannels;
-    uchar m_levelLowLimit;
-    uchar m_levelHighLimit;
 
     QMutex m_levelValueMutex;
     bool m_levelValueChanged;
@@ -275,22 +296,108 @@ protected:
 
     /** Data model used by the QML UI to represent groups/fixtures/channels */
     TreeModel *m_fixtureTree;
+    /** A string to filter the displayed tree items */
+    QString m_searchFilter;
 
     /*********************************************************************
-     * Playback mode
+     * Click & Go
      *********************************************************************/
 public:
-    quint32 playbackFunction() const;
-    void setPlaybackFunction(quint32 playbackFunction);
+    enum ClickAndGoType
+    {
+        CnGNone,
+        CnGColors,
+        CnGPreset
+    };
+    Q_ENUM(ClickAndGoType)
+
+    /** Get/Set the current Click & Go type */
+    ClickAndGoType clickAndGoType() const;
+    void setClickAndGoType(ClickAndGoType clickAndGoType);
+
+    /** Returns a human readable string of a Click And Go type */
+    static QString clickAndGoTypeToString(ClickAndGoType type);
+
+    /** Returns a Click And Go type from the given string */
+    static ClickAndGoType stringToClickAndGoType(QString str);
+
+    QColor cngPrimaryColor() const;
+    QColor cngSecondaryColor() const;
+    QVariantList clickAndGoPresetsList();
+    QString cngPresetResource() const;
+
+    Q_INVOKABLE void setClickAndGoColors(QColor rgb, QColor wauv);
+    Q_INVOKABLE void setClickAndGoPresetValue(int value);
+
+protected:
+    void updateClickAndGoResource();
+
+signals:
+    void clickAndGoTypeChanged(ClickAndGoType clickAndGoType);
+    void cngPrimaryColorChanged(QColor value);
+    void cngSecondaryColorChanged(QColor value);
+    void clickAndGoPresetsListChanged();
+    void cngPresetResourceChanged();
+
+protected:
+    ClickAndGoType m_clickAndGoType;
+
+    /** RGB and WAUV colors when in CnGColors type */
+    QColor m_cngPrimaryColor;
+    QColor m_cngSecondaryColor;
+    QString m_cngResource;
+
+    /*********************************************************************
+     * Adjust mode
+     *********************************************************************/
+public:
+    /** Get/Set the ID of the Function that will be controlled by this Slider */
+    quint32 controlledFunction() const;
+    void setControlledFunction(quint32 fid);
+
+    /** Get/Set the attribute index that will be controlled by this Slider */
+    int controlledAttribute() const;
+    void setControlledAttribute(int attributeIndex);
+
+    void adjustFunctionAttribute(Function *f, qreal value);
+
+    /** Get the list of the available attributes for the Function to control */
+    QStringList availableAttributes() const;
+
+    /** Return the min/max values for the attribute to control */
+    qreal attributeMinValue() const;
+    qreal attributeMaxValue() const;
+
+    /** @reimp */
+    void adjustIntensity(qreal val);
 
 private:
     FunctionParent functionParent() const;
 
 signals:
-    void playbackFunctionChanged(quint32 playbackFunction);
+    void controlledFunctionChanged(quint32 fid);
+    void controlledAttributeChanged(int attr);
+    void availableAttributesChanged();
+    void attributeMinValueChanged();
+    void attributeMaxValueChanged();
+
+protected slots:
+    void slotControlledFunctionAttributeChanged(int attrIndex, qreal fraction);
+    void slotControlledFunctionStopped(quint32 fid);
 
 protected:
-    quint32 m_playbackFunction;
+    quint32 m_controlledFunctionId;
+    int m_adjustChangeCounter;
+    int m_controlledAttributeIndex;
+    int m_controlledAttributeId;
+    qreal m_attributeMinValue;
+    qreal m_attributeMaxValue;
+
+    /*********************************************************************
+     * Submaster
+     *********************************************************************/
+signals:
+    void submasterValueChanged(qreal value);
 
     /*********************************************************************
      * Grand Master mode
@@ -318,8 +425,8 @@ protected:
     /** writeDMX for Level mode */
     void writeDMXLevel(MasterTimer* timer, QList<Universe*> universes);
 
-    /** writeDMX for Playback mode */
-    void writeDMXPlayback(MasterTimer* timer, QList<Universe*> universes);
+    /** writeDMX for Adjust mode */
+    void writeDMXAdjust(MasterTimer* timer, QList<Universe*> universes);
 
     /*********************************************************************
      * External input
@@ -332,11 +439,14 @@ public slots:
      * Load & Save
      *********************************************************************/
 public:
+    /** @reimp */
     bool loadXML(QXmlStreamReader &root);
     bool loadXMLLevel(QXmlStreamReader &level_root);
-    bool loadXMLPlayback(QXmlStreamReader &pb_root);
+    bool loadXMLAdjust(QXmlStreamReader &adj_root);
+    bool loadXMLLegacyPlayback(QXmlStreamReader &pb_root);
 
-    //bool saveXML(QXmlStreamWriter *doc);
+    /** @reimp */
+    bool saveXML(QXmlStreamWriter *doc);
 };
 
 #endif

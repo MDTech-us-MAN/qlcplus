@@ -56,7 +56,7 @@ void FixtureGroup::copyFrom(const FixtureGroup* grp)
     // Don't copy ID
     m_name = grp->name();
     m_size = grp->size();
-    m_heads = grp->headHash();
+    m_heads = grp->headsMap();
 }
 
 Doc* FixtureGroup::doc() const
@@ -141,13 +141,12 @@ void FixtureGroup::assignHead(const QLCPoint& pt, const GroupHead& head)
     }
     else
     {
-        bool assigned = false;
         int y = 0;
         int x = 0;
         int xmax = size().width();
         int ymax = size().height();
 
-        while (assigned == false)
+        while (1)
         {
             for (; y < ymax; y++)
             {
@@ -229,7 +228,7 @@ QList <GroupHead> FixtureGroup::headList() const
     return m_heads.values();
 }
 
-QHash <QLCPoint,GroupHead> FixtureGroup::headHash() const
+QMap<QLCPoint, GroupHead> FixtureGroup::headsMap() const
 {
     return m_heads;
 }
@@ -269,16 +268,6 @@ QSize FixtureGroup::size() const
 /****************************************************************************
  * Load & Save
  ****************************************************************************/
-
-static bool compareQLCPoints(const QLCPoint pt1, const QLCPoint pt2)
-{
-    if (pt1.y() < pt2.y())
-        return true;
-    if (pt1.y() == pt2.y() && pt1.x() < pt2.x())
-        return true;
-
-    return false;
-}
 
 bool FixtureGroup::loader(QXmlStreamReader &xmlDoc, Doc* doc)
 {
@@ -379,7 +368,6 @@ bool FixtureGroup::saveXML(QXmlStreamWriter *doc)
 
     /* Fixture heads */
     QList<QLCPoint> pointsList = m_heads.keys();
-    qSort(pointsList.begin(), pointsList.end(), compareQLCPoints);
 
     foreach(QLCPoint pt, pointsList)
     {

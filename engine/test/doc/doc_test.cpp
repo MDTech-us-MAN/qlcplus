@@ -618,12 +618,6 @@ void Doc_Test::monitorProperties()
 {
     QRectF fxRect(100, 100, 300, 300);
 
-    QVERIFY(m_doc->m_monitorProps == NULL);
-    QVERIFY(m_doc->getAvailable2DPosition(fxRect) == QPointF(0, 0));
-
-    QVERIFY(m_doc->monitorProperties() != NULL);
-    QVERIFY(m_doc->getAvailable2DPosition(fxRect) == QPointF(100, 100));
-
     Fixture *f1 = new Fixture(m_doc);
     f1->setName("One");
     f1->setChannels(2);
@@ -652,11 +646,9 @@ void Doc_Test::monitorProperties()
     m_doc->addFixture(f3);
 
     MonitorProperties *props = m_doc->monitorProperties();
-    props->setFixturePosition(f1->id(), QVector3D(0, 0, 0));
-    props->setFixturePosition(f2->id(), QVector3D(300, 0, 0));
-    props->setFixturePosition(f3->id(), QVector3D(600, 0, 0));
-
-    QVERIFY(m_doc->getAvailable2DPosition(fxRect) == QPointF(950, 100));
+    props->setFixturePosition(f1->id(), 0, 0, QVector3D(0, 0, 0));
+    props->setFixturePosition(f2->id(), 0, 0, QVector3D(300, 0, 0));
+    props->setFixturePosition(f3->id(), 0, 0, QVector3D(600, 0, 0));
 }
 
 void Doc_Test::addFunction()

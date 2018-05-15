@@ -9,7 +9,7 @@ TARGET = qlcplus-qml
 QT += qml quick widgets svg
 QT += multimedia multimediawidgets
 QT += printsupport
-QT += 3dcore 3drender 3dquick 3dquickextras
+QT += 3dcore 3drender 3dinput 3dquick 3dquickextras
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -17,6 +17,7 @@ QML_IMPORT_PATH =
 # Engine
 INCLUDEPATH     += ../engine/src ../engine/audio/src
 INCLUDEPATH     += virtualconsole
+INCLUDEPATH     += tardis
 INCLUDEPATH     += ../plugins/interfaces
 DEPENDPATH      += ../engine/src
 QMAKE_LIBDIR    += ../engine/src
@@ -24,20 +25,21 @@ LIBS            += -lqlcplusengine
 #win32:QMAKE_LFLAGS += -shared
 win32:RC_FILE = qmlui.rc
 
-DEFINES += MESHESDIR=\\\"$$INSTALLROOT/$$DATADIR/meshes\\\"
-
 HEADERS += \
     app.h \
     audioeditor.h \
     chasereditor.h \
     collectioneditor.h \
+    colorfilters.h \
     contextmanager.h \
     efxeditor.h \
     fixturebrowser.h \
     fixturegroupeditor.h \
     fixturemanager.h \
+    fixtureutils.h \
     functioneditor.h \
     functionmanager.h \
+    importmanager.h \
     inputoutputmanager.h \
     listmodel.h \
     mainview2d.h \
@@ -58,13 +60,16 @@ SOURCES += main.cpp \
     audioeditor.cpp \
     chasereditor.cpp \
     collectioneditor.cpp \
+    colorfilters.cpp \
     contextmanager.cpp \
     efxeditor.cpp \
     fixturebrowser.cpp \
     fixturegroupeditor.cpp \
     fixturemanager.cpp \
+    fixtureutils.cpp \
     functioneditor.cpp \
     functionmanager.cpp \
+    importmanager.cpp \
     inputoutputmanager.cpp \
     listmodel.cpp \
     mainview2d.cpp \
@@ -81,6 +86,22 @@ SOURCES += main.cpp \
     videoprovider.cpp
 
 #############################################
+#  TARDIS
+#############################################
+
+HEADERS += \
+    tardis/tardis.h \
+    tardis/networkpacketizer.h \
+    tardis/networkmanager.h \
+    tardis/simplecrypt.h
+
+SOURCES += \
+    tardis/tardis.cpp \
+    tardis/networkpacketizer.cpp \
+    tardis/networkmanager.cpp \
+    tardis/simplecrypt.cpp
+
+#############################################
 #  Virtual Console
 #############################################
 
@@ -93,7 +114,8 @@ HEADERS += \
     virtualconsole/vcbutton.h \
     virtualconsole/vclabel.h \
     virtualconsole/vcslider.h \
-    virtualconsole/vcclock.h
+    virtualconsole/vcclock.h \
+    virtualconsole/vccuelist.h
 
 SOURCES += \
     virtualconsole/virtualconsole.cpp \
@@ -104,7 +126,8 @@ SOURCES += \
     virtualconsole/vcbutton.cpp \
     virtualconsole/vclabel.cpp \
     virtualconsole/vcslider.cpp \
-    virtualconsole/vcclock.cpp
+    virtualconsole/vcclock.cpp \
+    virtualconsole/vccuelist.cpp
 
 RESOURCES += qmlui.qrc ../resources/icons/svg/svgicons.qrc ../resources/fonts/fonts.qrc
 

@@ -483,23 +483,34 @@ bool Universe::setFeedbackPatch(QLCIOPlugin *plugin, quint32 output)
     qDebug() << Q_FUNC_INFO << "plugin:" << plugin << "output:" << output;
     if (m_fbPatch == NULL)
     {
-        if (output == QLCIOPlugin::invalidLine())
+        if (plugin == NULL || output == QLCIOPlugin::invalidLine())
             return false;
+
         m_fbPatch = new OutputPatch(m_id, this);
     }
     else
     {
-        if (output == QLCIOPlugin::invalidLine())
+        if (plugin == NULL || output == QLCIOPlugin::invalidLine())
         {
             delete m_fbPatch;
             m_fbPatch = NULL;
+            emit hasFeedbacksChanged();
             return true;
         }
     }
     if (m_fbPatch != NULL)
-        return m_fbPatch->set(plugin, output);
+    {
+        bool result = m_fbPatch->set(plugin, output);
+        emit hasFeedbacksChanged();
+        return result;
+    }
 
     return false;
+}
+
+bool Universe::hasFeedbacks() const
+{
+    return m_fbPatch != NULL ? true : false;
 }
 
 InputPatch *Universe::inputPatch() const
@@ -530,12 +541,15 @@ void Universe::dumpOutput(const QByteArray &data)
     if (m_outputPatchList.count() == 0)
         return;
 
-    for (int i = 0; i < m_outputPatchList.count(); i++)
+    foreach (OutputPatch *op, m_outputPatchList)
     {
         if (m_totalChannelsChanged == true)
-            m_outputPatchList.at(i)->setPluginParameter(PLUGIN_UNIVERSECHANNELS, m_totalChannels);
+            op->setPluginParameter(PLUGIN_UNIVERSECHANNELS, m_totalChannels);
 
-        m_outputPatchList.at(i)->dump(m_id, data);
+        if (op->blackout())
+            op->dump(m_id, *m_modifiedZeroValues);
+        else
+            op->dump(m_id, data);
     }
     m_totalChannelsChanged = false;
 }
@@ -663,8 +677,6 @@ void Universe::setChannelCapability(ushort channel, QLCChannel::Group group, Cha
         m_totalChannels = channel + 1;
         m_totalChannelsChanged = true;
     }
-
-    return;
 }
 
 uchar Universe::channelCapabilities(ushort channel)
@@ -675,6 +687,25 @@ uchar Universe::channelCapabilities(ushort channel)
     return m_channelsMask->at(channel);
 }
 
+void Universe::setChannelDefaultValue(ushort channel, uchar value)
+{
+    if (channel >= (ushort)m_modifiedZeroValues.data()->count())
+        return;
+
+    (*m_modifiedZeroValues)[channel] = value;
+
+    if (channel >= m_totalChannels)
+    {
+        m_totalChannels = channel + 1;
+        m_totalChannelsChanged = true;
+    }
+
+    if (channel >= m_usedChannels)
+        m_usedChannels = channel + 1;
+
+    (*m_preGMValues)[channel] = value;
+}
+
 void Universe::setChannelModifier(ushort channel, ChannelModifier *modifier)
 {
     if (channel >= (ushort)m_modifiers.count())
@@ -682,11 +713,10 @@ void Universe::setChannelModifier(ushort channel, ChannelModifier *modifier)
 
     m_modifiers[channel] = modifier;
 
-    (*m_modifiedZeroValues)[channel] =
-        (modifier == NULL ? uchar(0) : modifier->getValue(0));
-
     if (modifier != NULL)
     {
+        (*m_modifiedZeroValues)[channel] = modifier->getValue(0);
+
         if (channel >= m_totalChannels)
         {
             m_totalChannels = channel + 1;
@@ -712,6 +742,7 @@ void Universe::updateIntensityChannelsRanges()
 {
     if (!m_intensityChannelsChanged)
         return;
+
     m_intensityChannelsChanged = false;
 
     m_intensityChannelsRanges.clear();
@@ -1024,11 +1055,13 @@ void Universe::savePatchXML(
     QString profileName,
     QMap<QString, QVariant> parameters) const
 {
+    // sanity check: don't save invalid data
+    if (pluginName.isEmpty() || pluginName == KInputNone || line == QLCIOPlugin::invalidLine())
+        return;
+
     doc->writeStartElement(tag);
-    if (!pluginName.isEmpty() && pluginName != KInputNone)
-        doc->writeAttribute(KXMLQLCUniversePlugin, pluginName);
-    if (line != QLCIOPlugin::invalidLine())
-        doc->writeAttribute(KXMLQLCUniverseLine, QString::number(line));
+    doc->writeAttribute(KXMLQLCUniversePlugin, pluginName);
+    doc->writeAttribute(KXMLQLCUniverseLine, QString::number(line));
     if (!profileName.isEmpty() && profileName != KInputNone)
         doc->writeAttribute(KXMLQLCUniverseProfileName, profileName);
 

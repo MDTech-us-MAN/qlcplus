@@ -1,7 +1,124 @@
+qlcplus (4.11.3) stable; urgency=low
+
+  * Fixture Editor: reworked to define more accurate information (see documentation)
+  * New fixtures: American DJ Auto Spot 150, Boom Box Fx2, Revo Sweep (thanks to Felix Edelmann)
+  * New fixtures: JB-Lighting Varyscan P7, Showtec Dominator, Showtec Sunraise LED (thanks to Felix Edelmann)
+  * New fixture: Orion Effects Lighting ORCAN2 (thanks to Felix Edelmann)
+  * New fixtures: American DJ Revo Burst, Ayra TDC Triple Burst, Chauvet GigBAR 2 (thanks to Flo Edelmann)
+  * New fixture: Venue TriStrip3Z (thanks to Flo Edelmann)
+  * New fixture: Stairville Crown FX PAR77 (thanks to Andres Robles)
+
+ -- Massimo Callegari <massimocallegari@yahoo.it>  Sun, 21 Oct 2018 12:13:14 +0200
+
+qlcplus (4.11.2) stable; urgency=low
+
+  * engine: fix crash caused by an invalid IO mapping
+  * engine: fix intensity override not considered during fade outs
+  * UI/Function Manager: fixed keyboard shortcut conflicts and document them
+  * UI/Function Manager: allow to import multiple of audio/video files at once
+  * UI/Channel Groups: added expand/collapse all button helpers
+  * UI/Chaser Editor: add a button to shuffle the selected Chaser steps (thanks to Felix Edelmann)
+  * UI/RGBMatrix Editor: fix preview not updating on pattern change when play button is on
+  * Show Manager: fix crash when adding a Sequence after deleting one
+  * Show Manager: fix crash when editing a Sequence bound to a deleted Scene
+  * Show Manager: fix items start time indication when dragging
+  * Virtual Console/Slider: fix submaster initial value not applied and inverted mode
+  * Virtual Console/Slider: added 'value catching' option for external controller faders (Lukas Jähn proposal)
+  * Virtual Console/Slider: fix values range when switching between Slider and Knob appearance
+  * Virtual Console/Slider: react on Scene flashing when in playback mode
+  * Virtual Console/Knob: fix DMX values not updated when interacting with the mouse wheel
+  * Virtual Console/Cue List: allow to select a step with next/previous buttons during pause
+  * Virtual Console/Cue List: go to the right chaser step after a pause (thanks to Krzysztof Walo)
+  * Virtual Console/Frame: fix regression preventing to send the disable feedback
+  * Web Access: added support for VC Buttons in Flash mode (Sylvain Laugié)
+  * Web Access: added support for VC Frame circular page scrolling (Sylvain Laugié)
+  * Web Access: update AudioTriggers state when changed from QLC+ (Sylvain Laugié)
+  * plugins/udmx: added 'channels' configuration parameter (see documentation)
+  * plugins/E1.31: fix crash on wrong packet length (David Garyga)
+  * New fixture: DTS XR7 Spot (thanks to Nicolò Zanon)
+  * New fixture: Ledj Slimline 12Q5 Batten (thanks to Dean Clough)
+  * New fixture: Ayra Compar Kit 1 (thanks to eigenaardiger)
+  * New fixtures: GLP Impression X4 S, Eurolite LED KLS-2500 (thanks to Mitsch)
+  * New fixture: Chauvet Intimidator Spot 255 IRC (thanks to Ham Sadler)
+  * New fixtures: Chauvet Geyser RGB, Geyser P6 (thanks to Andrew)
+  * New fixture: Chauvet Rotosphere Q3 (thanks to Eric Sherlock)
+  * New fixture: Showtec Compact Par 7 Q4 (thanks to Alexander)
+  * New fixture: Contest Delirium (thanks to Vincent)
+  * New fixture: Solena Mini Par 12, Max Bar 28 RGB (thanks to Nathan Durnan)
+  * New fixtures: Showtec Phantom 65, Laserworld PRO-800RGB (thanks to Piotr Nowik)
+  * New fixture: Chauvet MiN Spot RGBW (thanks to Jungle Jim)
+  * New fixtures: Showtec Shark Wash One, American DJ Vizi Hex Wash7 (thanks to Georg Müller)
+  * New fixture: Showtec Shark Beam FX One (thanks to Mats Lourenco)
+  * New fixture: Stairville novaWash Quad LED (thanks to Luke Bonett)
+  * New fixtures: Eurolite Party TCL Spot RGB, Expolite TourSpot 60, Expolite TourStick 72 RGBWA (thanks to Dirk J)
+  * New fixture: Chauvet Hemisphere 5.1, Trident, Scorpion Storm RGX (thanks to Francois Blanchette)
+  * New fixture: Briteq COB Slim 100-RGB (thanks to Thierry)
+  * New fixture: American DJ UB 12H (thanks to Jason R Johnston)
+  * New fixture: American DJ Mega Hex Par (thanks to Ben C)
+  * New fixture: Cameo Q SPOT 15 RGBW (thanks to Antoine Houbron)
+  * New fixture: lightmaXX Platinum Line Flat Par COB (thanks to Leonardo)
+  * New fixture: Stairville LED Blinder 2 COB 2x65W (thanks to chritoep)
+  * New fixture: lightmaXX LED PAR 64 (thanks to Johannes Felber)
+  * New fixture: Cameo Thunder Wash Series (thanks to JP)
+  * New fixtures: Briteq BT 575S, Stairville MH-x30 LED Beam (thanks to Andres Robles)
+  * New fixture: beamZ LED FlatPAR-154 (thanks to Jászberényi Szabolcs)
+  * New fixtures: Eurolite THA-100F COB, Cameo Tribar 200 IR (thanks to David Morgenschweis)
+  * New fixture: beamZ BT310 LED FlatPAR 12x8W 4-1 DMX IR (thanks to Mark)
+  * New fixture: Fun Generation PicoWash 40 Pixel Quad LED (thanks to Harm Aldick)
+  * New fixtures: American DJ Entourage, Elumen8 MS-700PE, Ibiza PAR LED 712IR (thanks to Tim Cullingworth)
+  * New fixtures: Martin MAC 401 Dual RGB Zoom, MAC 401 Dual CT Zoom, Stairville MH-z720 (thanks to Tim Cullingworth)
+  * New fixture: Fun Generation SePar Quad UV (thanks to Helmet)
+
+ -- Massimo Callegari <massimocallegari@yahoo.it>  Thu, 19 Apr 2018 20:21:22 +0200
+
+qlcplus (4.11.1) stable; urgency=low
+
+  * engine: fixed audio files detection by prioritizing sndfile over mad
+  * engine: fixed HTP/LTP forced channels not set correctly
+  * engine: keep track of input/output device lines even if they are disconnected
+  * engine/Script: add blackout:on and blackout:off commands (Jano Svitok)
+  * engine/Script: do not keep empty trailing lines when saving a workspace
+  * UI: it is now possible to detach a QLC+ context tab on a separate window by double clicking on it
+  * UI/RGB Panel: added RBG pixel type (thanks to Peter Marks)
+  * UI/Remap: fixed RGB Panels remapping
+  * UI/Input Output Manager: added a button to enable/disable USB hotplugging (disabled by default)
+  * UI/Function Live Edit: restore basic live editing of Sequences
+  * UI/RGB Matrix Editor: fixed save to Sequence feature
+  * UI/Function Manager: when cloning a Sequence, clone the bound Scene too
+  * Virtual Console/Button: highlight border with orange color when in "monitoring" state
+  * Virtual Console/Slider: fix DMX values not updated when interacting with the mouse wheel, keyboard or Click And Go button
+  * Virtual Console/Slider: fix level mode values range scaling
+  * Virtual Console/XYPad: the speed of a running EFX preset can now be controlled by a Speed Dial widget
+  * RGB Scripts: added "Noise", "3D Starfield", "Random pixel per row" and "Random pixel per row multicolor" (thanks to Doug Puckett)
+  * Web access: added basic authentication support (thanks to Bartosz Grabias)
+  * Web access: fixed solo frames collapse state
+  * Web access: update feedbacks when a slider is moved
+  * New fixtures: IMG Stageline BEAM-40 WS/RGBW, Fun-Generation LED Diamond Dome (thanks to Tolmino Muccitelli)
+  * New fixture: Elation Cuepix Batten (thanks to Saul Vielmetti)
+  * New fixture: Clay Paky Tiger Scan HMI 575/1200 (thanks to Daris Tomasoni)
+  * New fixture: Litecraft WashX.21 (thanks to Hannes Braun)
+  * New fixtures: Briteq Stagepainter 12, Nicols IP Wash 120, Showtec LED Powerline 16 Bar (thanks to Fredje Gallon)
+  * New fixtures: Nicols Movelight, Nicols Birdy Wash 122, Briteq Giga Flash RGB (thanks to Fredje Gallon)
+  * New fixtures: Litecraft PowerBar AT10.sx, Stairville MH-z1915 (thanks to Thorben / Fredje)
+  * New fixtures: Martin MAC 700 Wash, ADB Warp M (thanks to Thorben)
+  * New fixture: Laserworld CS-1000RGB Mk II (thanks to Piotr Nowik)
+  * New fixture: Chauvet COLORrail IRC (thanks to Lane Parsons)
+  * New fixtures: American DJ COB Cannon Wash DW, lightmaXX Vega Zoom Wash Beam (thanks to Florian Gerstenlauer)
+  * New fixture: Martin Rush MH5 Profile (thanks to Falko)
+  * New fixture: Cameo Flash Bar 150 (thanks to Kevin Wimmer)
+  * New fixtures: Chauvet FXpar 9, IMG Stageline Wash-40 LED (thanks to PeterK)
+  * New fixtures: JB Systems iRock 5C, JB Systems LED Devil (thanks to Andres Robles)
+  * New fixtures: beamZ BAC406, Geni Mojo Color Moc (thanks to Mark Sy)
+  * New fixtures: Stairville MH-250 S, Chauvet GigBAR 2, Pro-Lights Onyx (thanks to Freasy)
+  * New fixtures: Coemar ProSpot 250 LX, Showtec Kanjo Spot 60 (thanks to Flo Edelmann)
+
+ -- Massimo Callegari <massimocallegari@yahoo.it>  Sat, 28 Oct 2017 12:13:14 +0200
+
 qlcplus (4.11.0) stable; urgency=low
 
   * engine: fixed setting start/end color while a RGB Matrix is running
   * engine: fixed crash when pausing a Show with an unavailable audio file
+  * engine: major rework of Sequences. Projects using them need to be migrated
   * UI: enabled Alt key combinations on macOS to behave like other platforms (thanks to Matt Mayfield)
   * UI/RGB Panel: added panel direction (thanks to Raivis Rengelis)
   * UI/Fixture Manager: added weight and power consumption information on fixtures/universe selection (Chris de Rock idea)
@@ -18,6 +135,7 @@ qlcplus (4.11.0) stable; urgency=low
   * Virtual Console/Frame: added the possibility to jump directly to a page and assign page names (thanks to Lukas Jähn)
   * Virtual Console/Cue List: improved linked crossfade to perform an additive blending between steps (see documentation)
   * Virtual Console/Speed Dial: improved tap button blinking and feedbacks (thanks to Lukas Jähn)
+  * Virtual Console/Speed Dial: it is now possible to copy/paste factors (thanks to Jan Dahms)
   * Virtual Console/Clock: added external input support for countdown and stopwatch modes (thanks to Lukas Jähn)
   * Plugins/OSC: added channel number calculator in configuration page to help integrating new controllers
   * Plugins/Loopback: fixed spurious values emitted when a lot of channels are looped
@@ -90,7 +208,7 @@ qlcplus (4.11.0) stable; urgency=low
   * New fixture: American DJ Stinger Spot (thanks to Jason R. Johnston)
   * New fixture: Stairville Blade Sting 8 RGBW Beam Mover
 
- -- Massimo Callegari <massimocallegari@yahoo.it>  Sun, 30 Apr 2017 12:13:14 +0200
+ -- Massimo Callegari <massimocallegari@yahoo.it>  Sat, 24 Jun 2017 12:13:14 +0200
 
 qlcplus (4.10.5b) stable; urgency=high
 

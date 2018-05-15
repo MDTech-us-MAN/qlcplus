@@ -45,6 +45,7 @@ class Script : public Function
 public:
     static const QString startFunctionCmd;
     static const QString stopFunctionCmd;
+    static const QString blackoutCmd;
 
     static const QString waitCmd;
     static const QString waitKeyCmd;
@@ -54,6 +55,9 @@ public:
 
     static const QString labelCmd;
     static const QString jumpCmd;
+
+    static const QString blackoutOn;
+    static const QString blackoutOff;
 
     /************************************************************************
      * Initialization
@@ -98,6 +102,10 @@ public:
      *  The returned list is formatted as: Function ID / line number */
     QList<quint32> functionList() const;
 
+    /** Convenience method to retrieve Fixtures used by this Script.
+     *  The returned list is formatted as: Fixture ID / line number */
+    QList<quint32> fixtureList() const;
+
     QList<int> syntaxErrorsLines();
 
 private:
@@ -107,23 +115,23 @@ private:
      * Load & Save
      ************************************************************************/
 public:
-    /** @reimpl */
+    /** @reimp */
     bool loadXML(QXmlStreamReader &root);
 
-    /** @reimpl */
+    /** @reimp */
     bool saveXML(QXmlStreamWriter *doc);
 
     /************************************************************************
      * Running
      ************************************************************************/
 public:
-    /** @reimpl */
+    /** @reimp */
     void preRun(MasterTimer* timer);
 
-    /** @reimpl */
+    /** @reimp */
     void write(MasterTimer* timer, QList<Universe*> universes);
 
-    /** @reimpl */
+    /** @reimp */
     void postRun(MasterTimer* timer, QList<Universe*> universes);
 
 private:
@@ -170,6 +178,14 @@ private:
      * @return An empty string if successful. Otherwise an error string.
      */
     QString handleStopFunction(const QList<QStringList>& tokens);
+
+    /**
+     * Handle "blackout" command.
+     *
+     * @param tokens A list of keyword:value pairs
+     * @return An empty string if successful. Otherwise an error string.
+     */
+    QString handleBlackout(const QList<QStringList>& tokens);
 
     /**
      * Handle "wait" command.

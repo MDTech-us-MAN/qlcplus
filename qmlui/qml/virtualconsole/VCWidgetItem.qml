@@ -54,11 +54,42 @@ Rectangle
             return;
 
         wObj = obj
+        if (wObj.isEditing)
+        {
+            isSelected = true
+            virtualConsole.setWidgetSelection(wObj.id, wRoot, isSelected, true)
+        }
     }
 
     function setBgImageMargins(m)
     {
         bgImage.anchors.margins = m
+    }
+
+    function checkSnapping()
+    {
+
+    }
+
+    function updateGeometry(d)
+    {
+        d.target = null
+
+        if (virtualConsole.snapping)
+        {
+            var snappingSize = virtualConsole.snappingSize
+            x = Math.round(x / snappingSize) * snappingSize
+            y = Math.round(y / snappingSize) * snappingSize
+            width = Math.round(width / snappingSize) * snappingSize
+            height = Math.round(height / snappingSize) * snappingSize
+        }
+
+        wObj.geometry = Qt.rect(x, y, width, height)
+
+        x = Qt.binding(function() { return wObj ? wObj.geometry.x : 0 })
+        y = Qt.binding(function() { return wObj ? wObj.geometry.y : 0 })
+        width = Qt.binding(function() { return wObj ? wObj.geometry.width : 100 })
+        height = Qt.binding(function() { return wObj ? wObj.geometry.height : 100 })
     }
 
     Image
@@ -79,7 +110,7 @@ Rectangle
         // this must be above the widget root but
         // underneath the widget children (if any)
         z: isSelected ? 99 : 1
-        visible: virtualConsole.editMode && wObj && wObj.allowResize
+        visible: virtualConsole && virtualConsole.editMode && wObj && wObj.allowResize
 
         // mouse area to select and move the widget
         MouseArea
@@ -164,11 +195,7 @@ Rectangle
                     wRoot.height -= tlHandle.y
                     wRoot.y += tlHandle.y
                 }
-                onReleased:
-                {
-                    drag.target = null
-                    wObj.geometry = Qt.rect(wRoot.x, wRoot.y, wRoot.width, wRoot.height)
-                }
+                onReleased: wRoot.updateGeometry(drag)
             }
         }
         // top-right corner
@@ -203,11 +230,7 @@ Rectangle
                     wRoot.height -= trHandle.y
                     wRoot.y += trHandle.y
                 }
-                onReleased:
-                {
-                    drag.target = null
-                    wObj.geometry = Qt.rect(wRoot.x, wRoot.y, wRoot.width, wRoot.height)
-                }
+                onReleased: wRoot.updateGeometry(drag)
             }
         }
         // bottom-right corner
@@ -240,11 +263,7 @@ Rectangle
                     wRoot.width = brHandle.x + brHandle.width
                     wRoot.height = brHandle.y + brHandle.height
                 }
-                onReleased:
-                {
-                    drag.target = null
-                    wObj.geometry = Qt.rect(wRoot.x, wRoot.y, wRoot.width, wRoot.height)
-                }
+                onReleased: wRoot.updateGeometry(drag)
             }
         }
         // bottom-left corner
@@ -279,11 +298,7 @@ Rectangle
                     wRoot.x += blHandle.x
                     wRoot.width -= blHandle.x
                 }
-                onReleased:
-                {
-                    drag.target = null
-                    wObj.geometry = Qt.rect(wRoot.x, wRoot.y, wRoot.width, wRoot.height)
-                }
+                onReleased: wRoot.updateGeometry(drag)
             }
         }
     }

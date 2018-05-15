@@ -77,8 +77,57 @@ Rectangle
                     height: topBar.height - 2
                     imgSource: "qrc:/remove.svg"
                     tooltip: qsTr("Remove the selected items")
+                    onClicked:
+                    {
+                        if (gfhcDragItem.itemsList.length === 0)
+                            return;
+
+                        var fxDeleteList = []
+                        var fxGroupDeleteList = []
+
+                        for (var i = 0; i < gfhcDragItem.itemsList.length; i++)
+                        {
+                            var item = gfhcDragItem.itemsList[i]
+
+                            switch(item.itemType)
+                            {
+                                case App.UniverseDragItem:
+                                break;
+                                case App.FixtureGroupDragItem:
+                                    fxGroupDeleteList.push(item.cRef.id)
+                                break;
+                                case App.FixtureDragItem:
+                                    fxDeleteList.push(item.cRef.id)
+                                break;
+                            }
+                        }
+
+                        if (fxDeleteList.length)
+                            fixtureManager.deleteFixtures(fxDeleteList)
+
+                        if (fxGroupDeleteList.length)
+                            fixtureManager.deleteFixtureGroups(fxGroupDeleteList)
+                    }
                 }
                 Rectangle { Layout.fillWidth: true }
+                IconButton
+                {
+                    id: searchItem
+                    z: 2
+                    width: height
+                    height: topBar.height - 2
+                    bgColor: UISettings.bgMain
+                    faColor: checked ? "white" : "gray"
+                    faSource: FontAwesome.fa_search
+                    checkable: true
+                    tooltip: qsTr("Set a Group/Fixture/Channel search filter")
+                    onToggled:
+                    {
+                        fixtureManager.searchFilter = ""
+                        if (checked)
+                            sTextInput.forceActiveFocus()
+                    }
+                }
                 IconButton
                 {
                     id: infoButton
@@ -104,10 +153,9 @@ Rectangle
                             case App.UniverseDragItem:
                                 if (checked)
                                 {
-                                    fixtureManager.universeFilter = gfhcDragItem.itemsList[0].cRef.id
+                                    fixtureManager.itemID = gfhcDragItem.itemsList[0].cRef.id
                                     fixtureAndFunctions.currentViewQML = "qrc:/UniverseSummary.qml"
                                 }
-
                             break;
                             case App.FixtureGroupDragItem:
                                 if (checked)
@@ -122,6 +170,11 @@ Rectangle
 
                             break;
                             case App.FixtureDragItem:
+                                if (checked)
+                                {
+                                    fixtureManager.itemID = gfhcDragItem.itemsList[0].cRef.id
+                                    fixtureAndFunctions.currentViewQML = "qrc:/FixtureSummary.qml"
+                                }
                             break;
                         }
 
@@ -135,11 +188,40 @@ Rectangle
             }
         }
 
+        Rectangle
+        {
+            id: searchBox
+            visible: searchItem.checked
+            width: fgmContainer.width
+            height: UISettings.iconSizeMedium
+            z: 5
+            color: UISettings.bgMain
+            radius: 5
+            border.width: 2
+            border.color: "#111"
+
+            TextInput
+            {
+                id: sTextInput
+                y: 3
+                height: parent.height - 6
+                width: parent.width
+                color: UISettings.fgMain
+                text: modelProvider ? modelProvider.searchFilter : fixtureManager.searchFilter
+                font.family: "Roboto Condensed"
+                font.pixelSize: parent.height - 6
+                selectionColor: UISettings.highlightPressed
+                selectByMouse: true
+
+                onTextChanged: modelProvider ? modelProvider.searchFilter = text : fixtureManager.searchFilter = text
+            }
+        }
+
         ListView
         {
             id: groupListView
             width: fgmContainer.width
-            height: fgmContainer.height - topBar.height
+            height: fgmContainer.height - topBar.height - (searchBox.visible ? searchBox.height : 0)
             z: 4
             boundsBehavior: Flickable.StopAtBounds
 
@@ -212,6 +294,27 @@ Rectangle
                                         if (model.hasChildren)
                                             model.isExpanded = item.isExpanded
                                     }
+
+                                    if (infoButton.checked)
+                                        fixtureManager.itemID = iID
+
+                                    if (!(mouseMods & Qt.ControlModifier))
+                                        contextManager.resetFixtureSelection()
+
+                                    console.log("Item clicked. Type: " + qItem.itemType + ", id: " + iID)
+
+                                    switch (qItem.itemType)
+                                    {
+                                        case App.FixtureDragItem:
+                                            contextManager.setFixtureSelection(iID, true)
+                                        break;
+                                        case App.UniverseDragItem:
+                                            contextManager.setFixtureGroupSelection(iID, true, true)
+                                        break;
+                                        case App.FixtureGroupDragItem:
+                                            contextManager.setFixtureGroupSelection(iID, true, false)
+                                        break;
+                                    }
                                 break;
                                 case App.DragStarted:
                                     if (qItem == item && !model.isSelected)
@@ -229,7 +332,7 @@ Rectangle
                                     gfhcDragItem.x = 0
                                     gfhcDragItem.y = 0
                                     groupListView.dragActive = false
-                                    gfhcDragItem.itemsList = []
+                                    //gfhcDragItem.itemsList = []
                                 break;
                             }
                         }

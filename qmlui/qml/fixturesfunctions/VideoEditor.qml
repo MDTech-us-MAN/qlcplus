@@ -40,6 +40,11 @@ Rectangle
         videoEditor.customGeometry = Qt.rect(geomXSpin.value, geomYSpin.value, geomWSpin.value, geomHSpin.value)
     }
 
+    function updateRotation()
+    {
+        videoEditor.rotation = Qt.vector3d(rotXSpin.value, rotYSpin.value, rotZSpin.value)
+    }
+
     EditorTopBar
     {
         id: topBar
@@ -48,8 +53,9 @@ Rectangle
 
         onBackClicked:
         {
-            functionManager.setEditorFunction(-1, false)
-            requestView(-1, "qrc:/FunctionManager.qml")
+            var prevID = videoEditor.previousID
+            functionManager.setEditorFunction(prevID, false, true)
+            requestView(prevID, functionManager.getEditorResource(prevID))
         }
     }
 
@@ -60,8 +66,7 @@ Rectangle
 
         onAccepted:
         {
-            var url = "" + openVideoDialog.fileUrl
-            videoEditor.sourceFileName = url.replace("file://", "")
+            videoEditor.sourceFileName = openVideoDialog.fileUrl
         }
     }
 
@@ -101,18 +106,19 @@ Rectangle
 
                 onClicked:
                 {
+                    var i
                     var videoExtList = videoEditor.videoExtensions
                     var picExtList = videoEditor.pictureExtensions
                     var vexts = qsTr("Video files") + " ("
-                    for (var i = 0; i < videoExtList.length; i++)
+                    for (i = 0; i < videoExtList.length; i++)
                         vexts += videoExtList[i] + " "
                     vexts += ")"
                     var pexts = qsTr("Picture files") + " ("
-                    for (var i = 0; i < picExtList.length; i++)
+                    for (i = 0; i < picExtList.length; i++)
                         pexts += picExtList[i] + " "
                     pexts += ")"
 
-                    openVideoDialog.nameFilters = [ vexts, pexts, qsTr("All files (*)") ]
+                    openVideoDialog.nameFilters = [ vexts, pexts, qsTr("All files") + " (*)" ]
                     openVideoDialog.visible = true
                     openVideoDialog.open()
                 }
@@ -285,6 +291,16 @@ Rectangle
                 implicitHeight: implicitWidth
                 ButtonGroup.group: geometryGroup
                 checked: videoEditor.customGeometry.width == 0 && videoEditor.customGeometry.height == 0
+                onToggled:
+                {
+                    if (checked)
+                    {
+                        geomXSpin.value = 0
+                        geomYSpin.value = 0
+                        geomWSpin.value = 0
+                        geomHSpin.value = 0
+                    }
+                }
             }
             RobotoText
             {
@@ -299,14 +315,17 @@ Rectangle
                 implicitHeight: implicitWidth
                 ButtonGroup.group: geometryGroup
                 checked: videoEditor.customGeometry.width != 0 && videoEditor.customGeometry.height != 0
-                onClicked:
+                onToggled:
                 {
                     if (checked)
                     {
                         if (!mediaInfo || !mediaInfo.Resolution)
                             return
 
-                        videoEditor.customGeometry = Qt.rect(0, 0, mediaInfo.Resolution.width, mediaInfo.Resolution.height)
+                        geomXSpin.value = 0
+                        geomYSpin.value = 0
+                        geomWSpin.value = mediaInfo.Resolution.width
+                        geomHSpin.value = mediaInfo.Resolution.height
                     }
                 }
             }
@@ -328,13 +347,14 @@ Rectangle
         {
             visible: custGeomCheck.checked
             height: UISettings.listItemHeight
-            width: Layout.fillWidth
+            Layout.fillWidth: true
+            spacing: 5
 
             RobotoText { label: "X" }
             CustomSpinBox
             {
                 id: geomXSpin
-                width: Layout.fillWidth
+                Layout.fillWidth: true
                 from: 0
                 to: 99999
                 value: videoEditor.customGeometry.x
@@ -344,7 +364,7 @@ Rectangle
             CustomSpinBox
             {
                 id: geomYSpin
-                width: Layout.fillWidth
+                Layout.fillWidth: true
                 from: 0
                 to: 99999
                 value: videoEditor.customGeometry.y
@@ -363,13 +383,14 @@ Rectangle
         {
             visible: custGeomCheck.checked
             height: UISettings.listItemHeight
-            width: Layout.fillWidth
+            Layout.fillWidth: true
+            spacing: 5
 
             RobotoText { label: qsTr("W") }
             CustomSpinBox
             {
                 id: geomWSpin
-                width: Layout.fillWidth
+                Layout.fillWidth: true
                 from: 0
                 to: 99999
                 value: videoEditor.customGeometry.width
@@ -379,11 +400,58 @@ Rectangle
             CustomSpinBox
             {
                 id: geomHSpin
-                width: Layout.fillWidth
+                Layout.fillWidth: true
                 from: 0
                 to: 99999
                 value: videoEditor.customGeometry.height
                 onValueChanged: updateCustomGeometry()
+            }
+        }
+
+        // row 12
+        RobotoText
+        {
+            height: UISettings.listItemHeight
+            label: qsTr("Rotation");
+        }
+        RowLayout
+        {
+            height: UISettings.listItemHeight
+            spacing: 5
+            Layout.fillWidth: true
+
+            RobotoText { label: qsTr("X") }
+            CustomSpinBox
+            {
+                id: rotXSpin
+                Layout.fillWidth: true
+                from: -360
+                to: 360
+                suffix: "°"
+                value: videoEditor.rotation.x
+                onValueChanged: updateRotation()
+            }
+            RobotoText { label: qsTr("Y") }
+            CustomSpinBox
+            {
+                id: rotYSpin
+                Layout.fillWidth: true
+                from: -360
+                to: 360
+                suffix: "°"
+                value: videoEditor.rotation.y
+                onValueChanged: updateRotation()
+            }
+            RobotoText { label: qsTr("Z") }
+            CustomSpinBox
+            {
+                id: rotZSpin
+                Layout.fillWidth: true
+                from: -360
+                to: 360
+                suffix: "°"
+                value: videoEditor.rotation.z
+                onValueChanged: updateRotation()
             }
         }
     }

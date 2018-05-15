@@ -17,7 +17,7 @@
   limitations under the License.
 */
 
-import QtQuick 2.3
+import QtQuick 2.8
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.1
 
@@ -37,6 +37,8 @@ Rectangle
     property string currentView: "2D"
     //property bool docLoaded: qlcplus.docLoaded
 
+    Component.onCompleted: contextManager.updateFixturesCapabilities()
+
     function enableContext(ctx, setChecked)
     {
         var item = null
@@ -55,6 +57,17 @@ Rectangle
             if (setChecked)
                 item.checked = true
         }
+        settingsButton.checked = false
+    }
+
+    function loadContext(checked, qmlres, ctx)
+    {
+        if (checked === false)
+            return
+
+        settingsButton.checked = false
+        currentViewQML = qmlres
+        currentView = ctx
     }
 
     LeftPanel
@@ -118,14 +131,8 @@ Rectangle
                     checkedColor: UISettings.toolbarSelectionSub
                     bgGradient: ffMenuGradient
                     ButtonGroup.group: ffMenuBarGroup
-                    onCheckedChanged:
-                    {
-                        if (checked == true)
-                        {
-                            currentViewQML = "qrc:/UniverseGridView.qml"
-                            currentView = "UNIGRID"
-                        }
-                    }
+
+                    onCheckedChanged: loadContext(checked, "qrc:/UniverseGridView.qml", "UNIGRID")
                     onRightClicked:
                     {
                         uniView.visible = false
@@ -140,14 +147,8 @@ Rectangle
                     checkedColor: UISettings.toolbarSelectionSub
                     bgGradient: ffMenuGradient
                     ButtonGroup.group: ffMenuBarGroup
-                    onCheckedChanged:
-                    {
-                        if (checked == true)
-                        {
-                            currentViewQML = "qrc:/DMXView.qml"
-                            currentView = "DMX"
-                        }
-                    }
+
+                    onCheckedChanged: loadContext(checked, "qrc:/DMXView.qml", "DMX")
                     onRightClicked:
                     {
                         dmxView.visible = false
@@ -163,14 +164,8 @@ Rectangle
                     checkedColor: UISettings.toolbarSelectionSub
                     bgGradient: ffMenuGradient
                     ButtonGroup.group: ffMenuBarGroup
-                    onCheckedChanged:
-                    {
-                        if (checked == true)
-                        {
-                            currentViewQML = "qrc:/2DView.qml"
-                            currentView = "2D"
-                        }
-                    }
+
+                    onCheckedChanged: loadContext(checked, "qrc:/2DView.qml", "2D")
                     onRightClicked:
                     {
                         twodView.visible = false
@@ -185,12 +180,19 @@ Rectangle
                     checkedColor: UISettings.toolbarSelectionSub
                     bgGradient: ffMenuGradient
                     ButtonGroup.group: ffMenuBarGroup
+
                     onCheckedChanged:
                     {
-                        if (checked == true)
+                        if (checked)
                         {
-                            currentViewQML = "qrc:/3DView.qml"
-                            currentView = "3D"
+                            var glVersion = (GraphicsInfo.majorVersion * 10) + GraphicsInfo.minorVersion
+                            //console.log("OpengGL version: " + GraphicsInfo.majorVersion + "." + GraphicsInfo.minorVersion)
+                            // QTBUG-68130: apparently the reported version on macOS is wrong, so let's consider
+                            // every Mac capable of rendering the 3D view
+                            if (glVersion >= 33 || Qt.platform.os === "osx")
+                                loadContext(checked, "qrc:/3DView.qml", "3D")
+                            else
+                                loadContext(checked, "qrc:/3DViewUnsupported.qml", "3D")
                         }
                     }
                     onRightClicked:
@@ -207,10 +209,10 @@ Rectangle
                     height: viewToolbar.height - 4
                     anchors.margins: 1
                     model: ioManager.universesListModel
+                    currentValue: contextManager.universeFilter
 
                     onValueChanged:
                     {
-                        // set the universe filter here
                         contextManager.universeFilter = value
                         fixtureManager.universeFilter = value
                     }
@@ -218,22 +220,24 @@ Rectangle
 
                 Rectangle { Layout.fillWidth: true; color: "transparent" }
 
+                ZoomItem
+                {
+                    width: UISettings.iconSizeMedium * 2
+                    implicitHeight: viewToolbar.height - 2
+                    fontColor: UISettings.bgStrong
+                    onZoomOutClicked: previewLoader.item.setZoom(-0.5)
+                    onZoomInClicked: previewLoader.item.setZoom(0.5)
+                }
+
                 IconButton
                 {
                     id: settingsButton
                     implicitHeight: viewToolbar.height - 2
                     checkable: true
-                    imgSource: "qrc:/configure.svg"
+                    tooltip: qsTr("Show/hide the view settings")
+                    faColor: "white"
+                    faSource: FontAwesome.fa_bars
                     onToggled: previewLoader.item.showSettings(checked)
-                }
-
-                ZoomItem
-                {
-                    width: UISettings.iconSizeMedium * 2
-                    implicitHeight: viewToolbar.height - 2
-                    fontColor: "#222"
-                    onZoomOutClicked: previewLoader.item.setZoom(-0.5)
-                    onZoomInClicked: previewLoader.item.setZoom(0.5)
                 }
             }
         }

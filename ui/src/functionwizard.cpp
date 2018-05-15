@@ -21,6 +21,7 @@
 #include <QString>
 #include <QDebug>
 #include <QHash>
+#include <QAction>
 
 #include "palettegenerator.h"
 #include "fixtureselection.h"
@@ -630,9 +631,9 @@ VCWidget *FunctionWizard::createWidget(int type, VCWidget *parent, int xpos, int
                     if (channel->group() == QLCChannel::Gobo)
                     {
                         QLCCapability *cap = channel->searchCapability(scv.value);
-                        if (cap->resourceName().isEmpty() == false)
+                        if (cap->resource(0).isValid())
                         {
-                            widget->setBackgroundImage(cap->resourceName());
+                            widget->setBackgroundImage(cap->resource(0).toString());
                             break;
                         }
                     }

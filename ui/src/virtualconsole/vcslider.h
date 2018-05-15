@@ -49,6 +49,7 @@ class VCSliderProperties;
 #define KXMLQLCVCSliderValueDisplayStyle "ValueDisplayStyle"
 #define KXMLQLCVCSliderValueDisplayStyleExact "Exact"
 #define KXMLQLCVCSliderValueDisplayStylePercentage "Percentage"
+#define KXMLQLCVCSliderCatchValues "CatchValues"
 
 #define KXMLQLCVCSliderClickAndGoType "ClickAndGoType"
 
@@ -119,6 +120,10 @@ public:
 
     /** @reimp */
     void enableWidgetUI(bool enable);
+
+protected:
+    /** @reimp */
+    void hideEvent(QHideEvent* ev);
 
     /*********************************************************************
      * Properties
@@ -200,6 +205,16 @@ protected:
 public:
     bool invertedAppearance() const;
     void setInvertedAppearance(bool invert);
+
+    /*********************************************************************
+     * Value catching feature
+     *********************************************************************/
+public:
+    bool catchValues() const;
+    void setCatchValues(bool enable);
+
+protected:
+    bool m_catchValues;
 
     /*************************************************************************
      * Class LevelChannel
@@ -377,6 +392,7 @@ protected slots:
     void slotPlaybackFunctionRunning(quint32 fid);
     void slotPlaybackFunctionStopped(quint32 fid);
     void slotPlaybackFunctionIntensityChanged(int attrIndex, qreal fraction);
+    void slotPlaybackFunctionFlashing(quint32 fid, bool flashing);
 
 protected:
     quint32 m_playbackFunction;
@@ -441,7 +457,7 @@ public:
     };
 
 public:
-    void setSliderValue(uchar value, bool noScale = false);
+    void setSliderValue(uchar value, bool scale = true);
 
     void setSliderShadowValue(int value);
 
@@ -459,6 +475,7 @@ public:
 
 signals:
     void requestSliderUpdate(int value);
+    void valueChanged(QString val);
 
 private slots:
     void slotSliderMoved(int value);
@@ -559,15 +576,15 @@ protected slots:
     /** Called when an external input device produces input data */
     void slotInputValueChanged(quint32 universe, quint32 channel, uchar value);
 
+protected:
+    int m_lastInputValue;
+
     /*********************************************************************
      * Intensity
      *********************************************************************/
 public:
     /** @reimp */
     void adjustIntensity(qreal val);
-
-signals:
-    void valueChanged(QString val);
 
     /*********************************************************************
      * Load & Save

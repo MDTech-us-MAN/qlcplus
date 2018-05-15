@@ -39,20 +39,8 @@ function initProperties()
     console.log("addr: " + address + ", ch: " + channels);
 }
 
-//Creation is split into two functions due to an asynchronous wait while
-//possible external files are loaded.
-
-function loadComponent()
-{
-    if (itemComponent != null) // component has been previously loaded
-    {
-        createItem();
-        return;
-    }
-
-    itemComponent = Qt.createComponent("FixtureDragItem.qml");
-    createItem();
-}
+// Creation is split into two functions due to an asynchronous wait while
+// possible external files are loaded.
 
 function createItem()
 {
@@ -72,6 +60,18 @@ function createItem()
     }
 }
 
+function loadComponent()
+{
+    if (itemComponent != null) // component has been previously loaded
+    {
+        createItem();
+        return;
+    }
+
+    itemComponent = Qt.createComponent("FixtureDragItem.qml");
+    createItem();
+}
+
 function handleDrag(mouse)
 {
     if (draggedItem == null)
@@ -87,7 +87,9 @@ function handleDrag(mouse)
 function endDrag(mouse)
 {
     if (draggedItem == null)
+    {
         return;
+    }
 
     var currContext = previewLoader.item.contextName;
     console.log("Current context: " + currContext);
@@ -97,8 +99,11 @@ function endDrag(mouse)
     console.log("Item x: " + x + ", y: " + y);
 
     if (x >= 0 && y >= 0)
+    {
         fixtureManager.addFixture(manufacturer, model, mode, name, universeIndex,
                                   draggedItem.address, channels, quantity, gap, x, y);
+    }
+
     draggedItem.destroy();
     draggedItem = null;
 }

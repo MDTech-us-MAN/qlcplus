@@ -19,6 +19,7 @@
 
 import QtQuick 2.0
 import QtQuick.Layouts 1.0
+import QtQuick.Dialogs 1.1
 
 import org.qlcplus.classes 1.0
 import "."
@@ -30,12 +31,46 @@ SidePanel
 
     function createFunctionAndEditor(fType)
     {
+        var i
         // reset the currently loaded item first
         loaderSource = ""
 
-        var fEditor = functionManager.getEditorResource(fType)
+        if (fType === Function.AudioType)
+        {
+            var extList = functionManager.audioExtensions
+            var exts = qsTr("Audio files") + " ("
+            for (i = 0; i < extList.length; i++)
+                exts += extList[i] + " "
+            exts += ")"
+
+            openFileDialog.fType = fType
+            openFileDialog.nameFilters = [ exts, qsTr("All files") + " (*)" ]
+            openFileDialog.open()
+            return
+        }
+        else if (fType === Function.VideoType)
+        {
+            var videoExtList = functionManager.videoExtensions
+            var picExtList = functionManager.pictureExtensions
+            var vexts = qsTr("Video files") + " ("
+            for (i = 0; i < videoExtList.length; i++)
+                vexts += videoExtList[i] + " "
+            vexts += ")"
+            var pexts = qsTr("Picture files") + " ("
+            for (i = 0; i < picExtList.length; i++)
+                pexts += picExtList[i] + " "
+            pexts += ")"
+
+            openFileDialog.fType = fType
+            openFileDialog.nameFilters = [ vexts, pexts, qsTr("All files") + " (*)" ]
+            openFileDialog.open()
+            return
+        }
+
+
         var newFuncID = functionManager.createFunction(fType)
-        functionManager.setEditorFunction(newFuncID, false)
+        var fEditor = functionManager.getEditorResource(newFuncID)
+        functionManager.setEditorFunction(newFuncID, false, false)
 
         if (fType === Function.ShowType)
         {
@@ -54,10 +89,13 @@ SidePanel
 
     function requestEditor(funcID, funcType)
     {
+        if (!(qlcplus.accessMask & App.AC_FunctionEditing))
+            return
+
         // reset the currently loaded item first
         loaderSource = ""
         itemID = funcID
-        loaderSource = functionManager.getEditorResource(funcType)
+        loaderSource = functionManager.getEditorResource(funcID)
         animatePanel(true)
     }
 
@@ -65,6 +103,41 @@ SidePanel
     {
         if (item.hasOwnProperty("functionID"))
             item.functionID = itemID
+    }
+
+    FileDialog
+    {
+        id: openFileDialog
+        visible: false
+        selectMultiple: true
+
+        property int fType
+
+        onAccepted:
+        {
+
+            var strArray = []
+            for (var i = 0; i < fileUrls.length; i++)
+                strArray.push("" + fileUrls[i])
+
+            console.log("File list: " + strArray)
+
+            if (strArray.length === 1)
+            {
+                itemID = functionManager.createFunction(fType, strArray)
+                functionManager.setEditorFunction(itemID, false, false)
+                loaderSource = functionManager.getEditorResource(itemID)
+            }
+            else
+            {
+                functionManager.createFunction(fType, strArray)
+                loaderSource = "qrc:/FunctionManager.qml"
+            }
+
+            animatePanel(true)
+            addFunction.checked = false
+            funcEditor.checked = true
+        }
     }
 
     Rectangle
@@ -97,7 +170,7 @@ SidePanel
                     else
                     {
                         functionManager.selectFunctionID(-1, false)
-                        functionManager.setEditorFunction(-1, false)
+                        functionManager.setEditorFunction(-1, false, false)
                     }
                     animatePanel(checked)
                 }
@@ -105,6 +178,7 @@ SidePanel
             IconButton
             {
                 id: addFunction
+                visible: qlcplus.accessMask & App.AC_FunctionEditing
                 z: 2
                 width: iconSize
                 height: iconSize
@@ -118,7 +192,11 @@ SidePanel
                     visible: addFunction.checked
                     x: -width
 
-                    onEntryClicked: createFunctionAndEditor(fType)
+                    onEntryClicked:
+                    {
+                        close()
+                        createFunctionAndEditor(fType)
+                    }
                     onClosed: addFunction.checked = false
                 }
             }
@@ -169,6 +247,25 @@ SidePanel
                     title: qsTr("Rename functions")
                 }
             }
+
+            IconButton
+            {
+                z: 2
+                width: iconSize
+                height: iconSize
+                faSource: FontAwesome.fa_sitemap
+                faColor: UISettings.fgMedium
+                tooltip: qsTr("Show function usage")
+                counter: functionManager.selectionCount
+                onClicked:
+                {
+                    var idList = functionManager.selectedFunctionsID()
+                    loaderSource = ""
+                    itemID = idList[0]
+                    loaderSource = "qrc:/UsageList.qml"
+                }
+            }
+
             IconButton
             {
                 id: sceneDump
@@ -176,8 +273,25 @@ SidePanel
                 width: iconSize
                 height: iconSize
                 imgSource: "qrc:/dmxdump.svg"
-                tooltip: qsTr("Dump to a Scene")
-                counter: functionManager.dumpValuesCount
+                tooltip: qsTr("Dump on a new Scene")
+                counter: contextManager ? contextManager.dumpValuesCount && (qlcplus.accessMask & App.AC_FunctionEditing) : 0
+
+                onClicked:
+                {
+                    if (dmxDumpDialog.show)
+                    {
+                        dmxDumpDialog.sceneID = -1
+                        dmxDumpDialog.open()
+                        dmxDumpDialog.focusEditItem()
+                    }
+                    else
+                    {
+                        contextManager.dumpDmxChannels("")
+                        loaderSource = "qrc:/FunctionManager.qml"
+                        animatePanel(true)
+                        funcEditor.checked = true
+                    }
+                }
 
                 Rectangle
                 {
@@ -195,20 +309,87 @@ SidePanel
                     {
                         anchors.centerIn: parent
                         height: parent.height * 0.7
-                        label: functionManager.dumpValuesCount
+                        label: contextManager ? contextManager.dumpValuesCount : ""
                         fontSize: height
                     }
-
                 }
 
-                onClicked:
+                MouseArea
                 {
-                    contextManager.dumpDmxChannels()
-                    loaderSource = "qrc:/FunctionManager.qml"
-                    animatePanel(true)
-                    funcEditor.checked = true
+                    id: dumpDragArea
+                    anchors.fill: parent
+                    propagateComposedEvents: true
+                    drag.target: dumpDragItem
+                    drag.threshold: 10
+                    onClicked: mouse.accepted = false
+
+                    property bool dragActive: drag.active
+
+                    onDragActiveChanged:
+                    {
+                        console.log("Drag active changed: " + dragActive)
+                        if (dragActive == false)
+                        {
+                            dumpDragItem.Drag.drop()
+                            dumpDragItem.parent = sceneDump
+                            dumpDragItem.x = 0
+                            dumpDragItem.y = 0
+                        }
+                        dumpDragItem.Drag.active = dragActive
+                    }
+                }
+
+                Item
+                {
+                    id: dumpDragItem
+                    visible: dumpDragArea.drag.active
+
+                    Drag.source: dumpDragItem
+                    Drag.keys: [ "dumpValues" ]
+
+                    function itemDropped(id, name)
+                    {
+                        console.log("Dump values dropped on " + id)
+                        dmxDumpDialog.sceneID = id
+                        dmxDumpDialog.sceneName = name
+                        dmxDumpDialog.open()
+                        dmxDumpDialog.focusEditItem()
+                    }
+
+                    Rectangle
+                    {
+                        width: UISettings.iconSizeMedium
+                        height: width
+                        radius: width / 4
+                        color: "red"
+
+                        RobotoText
+                        {
+                            anchors.centerIn: parent
+                            label: contextManager ? contextManager.dumpValuesCount : ""
+                        }
+                    }
+                }
+
+                PopupDMXDump
+                {
+                    id: dmxDumpDialog
+
+                    property int sceneID: -1
+
+                    onAccepted:
+                    {
+                        if (sceneID == -1)
+                            contextManager.dumpDmxChannels(sceneName, getChannelsMask())
+                        else
+                            contextManager.dumpDmxChannels(sceneID, getChannelsMask())
+                        loaderSource = "qrc:/FunctionManager.qml"
+                        animatePanel(true)
+                        funcEditor.checked = true
+                    }
                 }
             }
+
             IconButton
             {
                 id: previewFunc
@@ -236,7 +417,7 @@ SidePanel
                 z: 2
                 width: iconSize
                 height: iconSize
-                imgSource: "qrc:/reset.svg"
+                faSource: FontAwesome.fa_times
                 tooltip: qsTr("Reset dump channels") + " (CTRL+R)"
                 onClicked: contextManager.resetDumpValues()
             }

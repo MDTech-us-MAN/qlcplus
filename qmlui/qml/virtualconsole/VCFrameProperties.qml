@@ -62,7 +62,6 @@ Rectangle
                 {
                     implicitWidth: UISettings.iconSizeMedium
                     implicitHeight: implicitWidth
-                    ButtonGroup.group: ButtonGroup { }
                     checked: widgetRef ? widgetRef.showHeader : false
                     onCheckedChanged: if (widgetRef) widgetRef.showHeader = checked
                 }
@@ -79,7 +78,6 @@ Rectangle
                 {
                     implicitWidth: UISettings.iconSizeMedium
                     implicitHeight: implicitWidth
-                    ButtonGroup.group: ButtonGroup { }
                     checked: widgetRef ? widgetRef.showEnable : false
                     onCheckedChanged: if (widgetRef) widgetRef.showEnable = checked
                 }
@@ -110,7 +108,6 @@ Rectangle
                 {
                     implicitWidth: UISettings.iconSizeMedium
                     implicitHeight: implicitWidth
-                    ButtonGroup.group: ButtonGroup { }
                     checked: widgetRef ? widgetRef.multiPageMode : false
                     onCheckedChanged: if (widgetRef) widgetRef.multiPageMode = checked
                 }
@@ -127,9 +124,8 @@ Rectangle
                 {
                     implicitWidth: UISettings.iconSizeMedium
                     implicitHeight: implicitWidth
-                    ButtonGroup.group: ButtonGroup { }
-                    //checked: widgetRef ? widgetRef.multiPageMode : false
-                    //onCheckedChanged: if (checked && widgetRef) widgetRef.multiPageMode = checked
+                    checked: widgetRef ? widgetRef.pagesLoop : false
+                    onCheckedChanged: if (checked && widgetRef) widgetRef.pagesLoop = checked
                 }
 
                 // row 3
@@ -150,6 +146,8 @@ Rectangle
                         height: gridItemsHeight
                         from: 1
                         to: 100
+                        value: widgetRef ? widgetRef.totalPagesNumber : 1
+                        onValueChanged: if (widgetRef) widgetRef.totalPagesNumber = value
                     }
                 }
 

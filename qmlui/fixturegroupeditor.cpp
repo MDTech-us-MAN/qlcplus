@@ -20,6 +20,7 @@
 #include <qmath.h>
 #include <QImage>
 #include <QDebug>
+#include <QQmlContext>
 
 #include "fixturegroupeditor.h"
 #include "doc.h"
@@ -31,9 +32,15 @@ FixtureGroupEditor::FixtureGroupEditor(QQuickView *view, Doc *doc, QObject *pare
 {
     Q_ASSERT(m_doc != NULL);
 
+    m_view->rootContext()->setContextProperty("fixtureGroupEditor", this);
     qmlRegisterUncreatableType<FixtureGroupEditor>("org.qlcplus.classes", 1, 0,  "FixtureGroupEditor", "Can't create a FixtureGroupEditor !");
 
     connect(m_doc, SIGNAL(loaded()), this, SLOT(slotDocLoaded()));
+}
+
+FixtureGroupEditor::~FixtureGroupEditor()
+{
+    m_view->rootContext()->setContextProperty("fixtureGroupEditor", NULL);
 }
 
 QVariant FixtureGroupEditor::groupsListModel()
@@ -87,6 +94,16 @@ QString FixtureGroupEditor::groupName() const
     return m_editGroup == NULL ? "" : m_editGroup->name();
 }
 
+void FixtureGroupEditor::setGroupName(QString name)
+{
+    if (m_editGroup == NULL || m_editGroup->name() == name)
+        return;
+
+    m_editGroup->setName(name);
+
+    emit groupNameChanged();
+}
+
 QSize FixtureGroupEditor::groupSize() const
 {
     if (m_editGroup == NULL)
@@ -118,6 +135,11 @@ QVariantList FixtureGroupEditor::groupLabels()
 QVariantList FixtureGroupEditor::selectionData()
 {
     return m_groupSelection;
+}
+
+void FixtureGroupEditor::resetSelection()
+{
+    m_groupSelection.clear();
 }
 
 QVariantList FixtureGroupEditor::groupSelection(int x, int y, int mouseMods)

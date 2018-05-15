@@ -28,6 +28,7 @@ PreviewContext::PreviewContext(QQuickView *view, Doc *doc, QString name, QObject
     , m_view(view)
     , m_mainView(view)
     , m_doc(doc)
+    , m_contextItem(NULL)
     , m_name(name)
     , m_title(name)
     , m_page(0)
@@ -35,6 +36,17 @@ PreviewContext::PreviewContext(QQuickView *view, Doc *doc, QString name, QObject
     , m_detached(false)
 {
     //connect(m_doc, &Doc::loaded, this, &PreviewContext::slotRefreshView);
+}
+
+PreviewContext::~PreviewContext()
+{
+    qDebug() << "Destroy context" << m_name;
+
+    if (detached())
+    {
+        m_view->close();
+        m_view->deleteLater();
+    }
 }
 
 QString PreviewContext::contextResource() const
@@ -119,6 +131,7 @@ void PreviewContext::setDetached(bool detached)
         m_view = cqView;
         connect(cqView, &ContextQuickView::keyPressed, this, &PreviewContext::keyPressed);
         connect(cqView, &ContextQuickView::keyReleased, this, &PreviewContext::keyReleased);
+        connect(cqView, &ContextQuickView::screenChanged, cqView, &ContextQuickView::slotScreenChanged);
 
         /** Copy all the global properties of the main context into the detached one.
          *  This is a bit ugly, but I guess it is a downside of the QML programming */
@@ -134,6 +147,7 @@ void PreviewContext::setDetached(bool detached)
         m_view->rootContext()->setContextProperty("showManager", m_mainView->rootContext()->contextProperty("showManager"));
         m_view->rootContext()->setContextProperty("actionManager", m_mainView->rootContext()->contextProperty("actionManager"));
         m_view->rootContext()->setContextProperty("View2D", m_mainView->rootContext()->contextProperty("View2D"));
+        m_view->rootContext()->setContextProperty("View3D", m_mainView->rootContext()->contextProperty("View3D"));
 
         /** Set the fundamental properties to allow the detached context to properly load */
         m_view->rootContext()->setContextProperty("viewSource", contextResource());
@@ -190,4 +204,11 @@ void ContextQuickView::keyReleaseEvent(QKeyEvent *e)
 {
     emit keyReleased(e);
     QQuickView::keyReleaseEvent(e);
+}
+
+void ContextQuickView::slotScreenChanged(QScreen *screen)
+{
+    qDebug() << "Context screen changed";
+    qreal pixelDensity = qMax(screen->physicalDotsPerInch() *  0.039370, (qreal)screen->size().height() / 220.0);
+    rootContext()->setContextProperty("screenPixelDensity", pixelDensity);
 }

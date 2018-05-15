@@ -18,6 +18,7 @@
 */
 
 import QtQuick 2.9
+import QtQuick.Window 2.3
 import QtQuick.Controls 2.2
 import "."
 
@@ -37,11 +38,32 @@ ComboBox
      */
 
     textRole: "mLabel"
+    wheelEnabled: true
 
     property string currentIcon
     property int currentValue
 
     signal valueChanged(int value)
+
+    onCurrentValueChanged:
+    {
+        if (!model)
+            return
+
+        //console.log("Value changed:" + currentValue + ", model count: " + model.length)
+        for (var i = 0; i < model.length; i++)
+        {
+            var item = model[i]
+            if (item.mValue === currentValue)
+            {
+                displayText = item.mLabel
+                if (item.mIcon)
+                    currentIcon = item.mIcon
+                currentIndex = i
+                return
+            }
+        }
+    }
 
     delegate:
         ItemDelegate
@@ -55,23 +77,23 @@ ComboBox
 
             property int currentIdx: control.currentIndex
             text: model.mLabel ? model.mLabel : (modelData.mLabel ? modelData.mLabel : modelData)
-            property string itemIcon: model.mIcon ? model.mIcon : (modelData && modelData.mIcon ? modelData.mIcon : "")
+            property string itemIcon: model.mIcon ? model.mIcon : (typeof modelData !== 'undefined' ? modelData.mIcon ? modelData.mIcon : "" : "")
             property int itemValue: (model.mValue !== undefined) ? model.mValue : ((modelData.mValue !== undefined) ? modelData.mValue : index)
 
             Component.onCompleted:
             {
+                //console.log("Combo item completed index: " + index + ", label: " + text + ", value: " + itemValue)
+
                 if (index === control.currentIndex)
                 {
                     displayText = text
                     currentIcon = itemIcon
+                    if (itemValue !== undefined && itemValue != currentValue)
+                    {
+                        currentValue = itemValue
+                        control.valueChanged(itemValue)
+                    }
                 }
-                if (control.currentValue && itemValue === control.currentValue)
-                {
-                    displayText = text
-                    currentIcon = itemIcon
-                    currentIndex = index
-                }
-                //console.log("Combo item completed index: " + index)
             }
 
             onCurrentIdxChanged:
@@ -80,9 +102,10 @@ ComboBox
                 {
                     displayText = text
                     currentIcon = itemIcon
+                    console.log("Index changed:" + index + ", value: " + itemValue)
                     if (itemValue !== undefined)
                     {
-                        control.currentValue = itemValue
+                        currentValue = itemValue
                         control.valueChanged(itemValue)
                     }
                 }
@@ -92,9 +115,10 @@ ComboBox
                 Row
                 {
                     spacing: 2
+                    leftPadding: 3
+
                     Image
                     {
-                        id: iconItem
                         visible: itemIcon ? true : false
                         height: UISettings.listItemHeight - 4
                         width: height
@@ -105,7 +129,6 @@ ComboBox
 
                     RobotoText
                     {
-                        id: textitem
                         label: text
                         height: UISettings.listItemHeight
                         fontSize: UISettings.textSizeDefault
@@ -115,15 +138,17 @@ ComboBox
             background:
                 Rectangle
                 {
+                    width: control.width
+                    height: UISettings.listItemHeight
                     visible: control.down || control.highlighted || control.visualFocus
-                    color: highlighted ? UISettings.highlight : hovered ? UISettings.bgMedium : "transparent"
+                    color: highlighted ? UISettings.highlight : hovered ? UISettings.bgControl : "transparent"
                 }
 
             onClicked:
             {
+                currentIndex = index
                 displayText = text
                 currentIcon = itemIcon
-                currentIndex = index
 
                 if (itemValue !== undefined)
                     control.valueChanged(itemValue)
@@ -145,8 +170,9 @@ ComboBox
     contentItem:
         Row
         {
-            x: 2
             spacing: 2
+            leftPadding: 3
+
             Image
             {
                 visible: currentIcon ? true : false
@@ -173,32 +199,10 @@ ComboBox
             visible: !control.flat || control.down
             implicitWidth: 150
             implicitHeight: UISettings.listItemHeight
-            color: control.hovered ? UISettings.bgLight : UISettings.bgMedium
+            color: control.hovered ? UISettings.bgLight : UISettings.bgControl
             border.width: 1
             border.color: UISettings.bgStrong
             radius: 3
-
-            MouseArea
-            {
-                anchors.fill: parent
-
-                onClicked: control.popup.visible ? control.popup.close() : control.popup.open()
-
-                onWheel:
-                {
-                    var newIdx
-                    if (wheel.angleDelta.y > 0)
-                        newIdx = Math.max(0, currentIndex - 1)
-                    else
-                        newIdx = Math.min(currentIndex + 1, count - 1)
-
-                    if (newIdx !== currentIndex)
-                    {
-                        currentIndex = newIdx
-                        console.log("Wheel event. Index: " + currentIndex)
-                    }
-                }
-            }
         }
 
     popup:
@@ -206,7 +210,9 @@ ComboBox
         {
             y: control.height
             width: control.width
-            implicitHeight: contentItem.implicitHeight
+            height: Math.min(contentItem.implicitHeight, control.Window.height - topMargin - bottomMargin)
+            topMargin: 0
+            bottomMargin: 0
             padding: 0
 
             contentItem:
@@ -215,7 +221,7 @@ ComboBox
                     id: popupList
                     clip: true
                     implicitHeight: contentHeight
-                    model: control.delegateModel
+                    model: control.popup.visible ? control.delegateModel : null
                     currentIndex: control.highlightedIndex
                     boundsBehavior: Flickable.StopAtBounds
                     highlightRangeMode: ListView.ApplyRange

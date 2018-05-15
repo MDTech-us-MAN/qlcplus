@@ -186,6 +186,19 @@ QList <SceneValue> Scene::values() const
     return m_values.keys();
 }
 
+QList<quint32> Scene::components()
+{
+    QList<quint32> ids;
+
+    foreach(SceneValue scv, m_values.keys())
+    {
+        if (ids.contains(scv.fxi) == false)
+            ids.append(scv.fxi);
+    }
+
+    return ids;
+}
+
 QColor Scene::colorValue(quint32 fxi)
 {
     int rVal = 0, gVal = 0, bVal = 0;
@@ -224,9 +237,11 @@ QColor Scene::colorValue(quint32 fxi)
         else if (channel->group() == QLCChannel::Colour)
         {
             QLCCapability *cap = channel->searchCapability(scv.value);
-            if (cap && cap->resourceColor1() != QColor())
+            if (cap &&
+                (cap->presetType() == QLCCapability::SingleColor ||
+                 cap->presetType() == QLCCapability::DoubleColor))
             {
-                QColor col = cap->resourceColor1();
+                QColor col = cap->resource(0).value<QColor>();
                 rVal = col.red();
                 gVal = col.green();
                 bVal = col.blue();
@@ -739,11 +754,14 @@ void Scene::insertStartValue(FadeChannel& fc, const MasterTimer* timer,
  * Intensity
  ****************************************************************************/
 
-void Scene::adjustAttribute(qreal fraction, int attributeIndex)
+int Scene::adjustAttribute(qreal fraction, int attributeId)
 {
-    if (m_fader != NULL && attributeIndex == Intensity)
-        m_fader->adjustIntensity(fraction);
-    Function::adjustAttribute(fraction, attributeIndex);
+    int attrIndex = Function::adjustAttribute(fraction, attributeId);
+
+    if (m_fader != NULL && attrIndex == Intensity)
+        m_fader->adjustIntensity(getAttributeValue(Function::Intensity));
+
+    return attrIndex;
 }
 
 /*************************************************************************

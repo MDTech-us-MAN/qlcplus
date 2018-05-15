@@ -29,6 +29,8 @@
 
 MainViewDMX::MainViewDMX(QQuickView *view, Doc *doc, QObject *parent)
     : PreviewContext(view, doc, "DMX", parent)
+    , m_showAddresses(false)
+    , m_relativeAddresses(false)
 {
     setContextResource("qrc:/DMXView.qml");
     setContextTitle(tr("DMX View"));
@@ -76,6 +78,9 @@ void MainViewDMX::reset()
     while(it.hasNext())
     {
         it.next();
+        Fixture *fixture = m_doc->fixture(it.key());
+        if (fixture)
+            disconnect(fixture, SIGNAL(aliasChanged()), this, SLOT(slotAliasChanged()));
         delete it.value();
     }
     m_itemsMap.clear();
@@ -89,6 +94,8 @@ void MainViewDMX::createFixtureItem(quint32 fxID)
     qDebug() << "[MainViewDMX] Creating fixture with ID" << fxID;
 
     Fixture *fixture = m_doc->fixture(fxID);
+    if (fixture == NULL)
+        return;
 
     QQuickItem *newFixtureItem = qobject_cast<QQuickItem*>(fixtureComponent->create());
 
@@ -99,6 +106,8 @@ void MainViewDMX::createFixtureItem(quint32 fxID)
     m_itemsMap[fxID] = newFixtureItem;
 
     updateFixture(fixture);
+
+    connect(fixture, SIGNAL(aliasChanged()), this, SLOT(slotAliasChanged()));
 }
 
 void MainViewDMX::updateFixture(Fixture *fixture)
@@ -117,7 +126,6 @@ void MainViewDMX::updateFixture(Fixture *fixture)
 
     QQuickItem *fxItem = m_itemsMap[fixture->id()];
     fxItem->setProperty("values", QVariant::fromValue(dmxValues));
-
 }
 
 void MainViewDMX::updateFixtureSelection(QList<quint32>fixtures)
@@ -144,6 +152,43 @@ void MainViewDMX::updateFixtureSelection(quint32 fxID, bool enable)
     fxItem->setProperty("isSelected", enable);
 }
 
+void MainViewDMX::removeFixtureItem(quint32 fxID)
+{
+    if (isEnabled() == false || m_itemsMap.contains(fxID) == false)
+        return;
+
+    QQuickItem *fixtureItem = m_itemsMap.take(fxID);
+    delete fixtureItem;
+}
+
+bool MainViewDMX::showAddresses() const
+{
+    return m_showAddresses;
+}
+
+void MainViewDMX::setShowAddresses(bool showAddresses)
+{
+    if (m_showAddresses == showAddresses)
+        return;
+
+    m_showAddresses = showAddresses;
+    emit showAddressesChanged(m_showAddresses);
+}
+
+bool MainViewDMX::relativeAddresses() const
+{
+    return m_relativeAddresses;
+}
+
+void MainViewDMX::setRelativeAddresses(bool relativeAddresses)
+{
+    if (m_relativeAddresses == relativeAddresses)
+        return;
+
+    m_relativeAddresses = relativeAddresses;
+    emit relativeAddressesChanged(m_relativeAddresses);
+}
+
 void MainViewDMX::slotRefreshView()
 {
     if (isEnabled() == false)
@@ -151,8 +196,18 @@ void MainViewDMX::slotRefreshView()
 
     reset();
 
-    foreach(Fixture *fixture, m_doc->fixtures())
+    for (Fixture *fixture : m_doc->fixtures())
         createFixtureItem(fixture->id());
+}
+
+void MainViewDMX::slotAliasChanged()
+{
+    if (isEnabled() == false)
+        return;
+
+    Fixture *fixture = qobject_cast<Fixture *>(sender());
+    QQuickItem *fxItem = m_itemsMap[fixture->id()];
+    QMetaObject::invokeMethod(fxItem, "updateChannels");
 }
 
 

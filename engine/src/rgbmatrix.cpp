@@ -168,6 +168,11 @@ bool RGBMatrix::copyFrom(const Function* function)
  * Fixtures
  ****************************************************************************/
 
+quint32 RGBMatrix::fixtureGroup() const
+{
+    return m_fixtureGroupID;
+}
+
 void RGBMatrix::setFixtureGroup(quint32 id)
 {
     m_fixtureGroupID = id;
@@ -178,9 +183,12 @@ void RGBMatrix::setFixtureGroup(quint32 id)
     m_stepsCount = stepsCount();
 }
 
-quint32 RGBMatrix::fixtureGroup() const
+QList<quint32> RGBMatrix::components()
 {
-    return m_fixtureGroupID;
+    if (m_group != NULL)
+        return m_group->fixtureList();
+
+    return QList<quint32>();
 }
 
 /****************************************************************************
@@ -836,11 +844,14 @@ void RGBMatrix::insertStartValues(FadeChannel& fc, uint fadeTime) const
  * Attributes
  *********************************************************************/
 
-void RGBMatrix::adjustAttribute(qreal fraction, int attributeIndex)
+int RGBMatrix::adjustAttribute(qreal fraction, int attributeId)
 {
-    if (m_fader != NULL && attributeIndex == Function::Intensity)
-        m_fader->adjustIntensity(fraction);
-    Function::adjustAttribute(fraction, attributeIndex);
+    int attrIndex = Function::adjustAttribute(fraction, attributeId);
+
+    if (m_fader != NULL && attrIndex == Function::Intensity)
+        m_fader->adjustIntensity(getAttributeValue(Function::Intensity));
+
+    return attrIndex;
 }
 
 /*************************************************************************

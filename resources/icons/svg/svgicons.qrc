@@ -1,5 +1,5 @@
 <RCC>
-  <qresource prefix="/">
+  <qresource prefix="/">   
     <file alias="2dview.svg">2dview.svg</file>
     <file alias="3dview.svg">3dview.svg</file>
     <file alias="add.svg">add.svg</file>
@@ -36,12 +36,17 @@
     <file alias="cuelist.svg">cuelist.svg</file>
     <file alias="cyan.svg">cyan.svg</file>
     <file alias="dimmer.svg">dimmer.svg</file>
+    <file alias="dimmer-back.svg">dimmer-back.svg</file>
+    <file alias="dimmer-fill.svg">dimmer-fill.svg</file>
     <file alias="diptool.svg">diptool.svg</file>
+    <file alias="distribute-x.svg">distribute-x.svg</file>
+    <file alias="distribute-y.svg">distribute-y.svg</file>
     <file alias="dmxdump.svg">dmxdump.svg</file>
     <file alias="dmxusbplugin.svg">dmxusbplugin.svg</file>
     <file alias="dmxview.svg">dmxview.svg</file>
     <file alias="down.svg">down.svg</file>
     <file alias="e131plugin.svg">e131plugin.svg</file>
+    <file alias="edit-paste.svg">edit-paste.svg</file>
     <file alias="edit.svg">edit.svg</file>
     <file alias="editor.svg">editor.svg</file>
     <file alias="effect.svg">effect.svg</file>
@@ -63,9 +68,11 @@
     <file alias="global.svg">global.svg</file>
     <file alias="gobo.svg">gobo.svg</file>
     <file alias="green.svg">green.svg</file>
+    <file alias="grid.svg">grid.svg</file>
     <file alias="group.svg">group.svg</file>
     <file alias="help.svg">help.svg</file>
     <file alias="hidplugin.svg">hidplugin.svg</file>
+    <file alias="import.svg">import.svg</file>
     <file alias="inputoutput.svg">inputoutput.svg</file>
     <file alias="info.svg">info.svg</file>
     <file alias="intensity.svg">intensity.svg</file>
@@ -78,10 +85,12 @@
     <file alias="magenta.svg">magenta.svg</file>
     <file alias="midiplugin.svg">midiplugin.svg</file>
     <file alias="movinghead.svg">movinghead.svg</file>
+    <file alias="network.svg">network.svg</file>
     <file alias="olaplugin.svg">olaplugin.svg</file>
     <file alias="oscplugin.svg">oscplugin.svg</file>
     <file alias="other.svg">other.svg</file>
     <file alias="pan.svg">pan.svg</file>
+    <file alias="pause.svg">pause.svg</file>
     <file alias="pingpong.svg">pingpong.svg</file>
     <file alias="play.svg">play.svg</file>
     <file alias="position.svg">position.svg</file>
@@ -90,6 +99,7 @@
     <file alias="qlcplus.svg">qlcplus.svg</file>
     <file alias="random.svg">random.svg</file>
     <file alias="red.svg">red.svg</file>
+    <file alias="redo.svg">redo.svg</file>
     <file alias="remove.svg">remove.svg</file>
     <file alias="rename.svg">rename.svg</file>
     <file alias="reset.svg">reset.svg</file>
@@ -112,6 +122,8 @@
     <file alias="stopall.svg">stopall.svg</file>
     <file alias="stretch.svg">stretch.svg</file>
     <file alias="tilt.svg">tilt.svg</file>
+    <file alias="uncheck.svg">uncheck.svg</file>
+    <file alias="undo.svg">undo.svg</file>
     <file alias="uniview.svg">uniview.svg</file>
     <file alias="unlock.svg">unlock.svg</file>
     <file alias="up.svg">up.svg</file>

@@ -167,5 +167,48 @@ Rectangle
 
               } // GridLayout
         } // SectionBox
+
+        SectionBox
+        {
+            id: startupIntensityProps
+            sectionLabel: qsTr("Adjust Function intensity")
+
+            sectionContents:
+              RowLayout
+              {
+                  width: parent.width
+                  spacing: 5
+
+                  CustomCheckBox
+                  {
+                      id: startupIntCheck
+                      implicitWidth: UISettings.iconSizeMedium
+                      implicitHeight: implicitWidth
+                      checked: widgetRef ? widgetRef.startupIntensityEnabled : false
+                      onClicked: if (widgetRef) widgetRef.startupIntensityEnabled = checked
+                  }
+
+                  CustomSlider
+                  {
+                      Layout.fillWidth: true
+                      enabled: startupIntCheck.checked
+                      value: widgetRef ? widgetRef.startupIntensity * 100 : 100
+                      onPositionChanged: if (widgetRef) widgetRef.startupIntensity = value / 100
+                  }
+
+                  CustomSpinBox
+                  {
+                      id: wSpin
+                      enabled: startupIntCheck.checked
+                      width: UISettings.bigItemHeight * 0.7
+                      height: UISettings.listItemHeight
+                      from: 0
+                      to: 100
+                      suffix: "%"
+                      value: widgetRef ? widgetRef.startupIntensity * 100 : 100
+                      onValueChanged: if (widgetRef) widgetRef.startupIntensity = value / 100
+                  }
+              }
+        }
     } // Column
 }

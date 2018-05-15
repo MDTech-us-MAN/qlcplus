@@ -37,8 +37,8 @@ VideoProvider::VideoProvider(QQuickView *view, Doc *doc, QObject *parent)
     for (Function *f : m_doc->functionsByType(Function::VideoType))
         slotFunctionAdded(f->id());
 
-    connect(m_doc, &Doc::functionAdded, this, &VideoProvider::slotFunctionAdded);
-    connect(m_doc, &Doc::functionRemoved, this, &VideoProvider::slotFunctionRemoved);
+    connect(m_doc, SIGNAL(functionAdded(quint32)), this, SLOT(slotFunctionAdded(quint32)));
+    connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
 }
 
 VideoProvider::~VideoProvider()
@@ -53,6 +53,9 @@ QQuickView *VideoProvider::fullscreenContext()
 
 void VideoProvider::setFullscreenContext(QQuickView *context)
 {
+    if (context == NULL && m_fullscreenContext)
+        m_fullscreenContext->deleteLater();
+
     m_fullscreenContext = context;
 }
 
@@ -65,10 +68,9 @@ void VideoProvider::slotFunctionAdded(quint32 id)
     Video *video = qobject_cast<Video *>(func);
     m_videoMap[id] = new VideoContent(video, this);
 
-    connect(video, &Video::requestPlayback, this, &VideoProvider::slotRequestPlayback);
-    connect(video, &Video::requestPause, this, &VideoProvider::slotRequestPause);
-    connect(video, &Video::requestStop, this, &VideoProvider::slotRequestStop);
-    connect(video, &Video::requestBrightnessAdjust, this, &VideoProvider::slotBrightnessAdjust);
+    connect(video, SIGNAL(requestPlayback()), this, SLOT(slotRequestPlayback()));
+    connect(video,SIGNAL(requestPause(bool)), this, SLOT(slotRequestPause(bool)));
+    connect(video, SIGNAL(requestStop()), this, SLOT(slotRequestStop()));
 }
 
 void VideoProvider::slotFunctionRemoved(quint32 id)
@@ -87,7 +89,7 @@ void VideoProvider::slotRequestPlayback()
         return;
 
     if (m_videoMap.contains(video->id()))
-        m_videoMap[video->id()]->playVideo();
+        m_videoMap[video->id()]->playContent();
 }
 
 void VideoProvider::slotRequestPause(bool enable)
@@ -102,12 +104,7 @@ void VideoProvider::slotRequestStop()
         return;
 
     if (m_videoMap.contains(video->id()))
-        m_videoMap[video->id()]->stopVideo();
-}
-
-void VideoProvider::slotBrightnessAdjust(int value)
-{
-    Q_UNUSED(value)
+        m_videoMap[video->id()]->stopContent();
 }
 
 /*********************************************************************
@@ -136,13 +133,19 @@ quint32 VideoContent::id() const
 
 void VideoContent::destroyContext()
 {
-    stopVideo();
-
     if (m_video->fullscreen())
+    {
         m_provider->setFullscreenContext(NULL);
+    }
+    else if (m_viewContext)
+    {
+        m_viewContext->deleteLater();
+    }
+
+    m_viewContext = NULL;
 }
 
-void VideoContent::playVideo()
+void VideoContent::playContent()
 {
     if (m_video->fullscreen())
         m_viewContext = m_provider->fullscreenContext();
@@ -192,6 +195,8 @@ void VideoContent::playVideo()
                                   Q_ARG(QVariant, QVariant::fromValue(m_video)));
     }
 
+    m_viewContext->setFlags(m_viewContext->flags() | Qt::WindowStaysOnTopHint);
+
     if (m_video->fullscreen())
     {
         m_provider->setFullscreenContext(m_viewContext);
@@ -201,15 +206,13 @@ void VideoContent::playVideo()
         m_viewContext->show();
 }
 
-void VideoContent::stopVideo()
+void VideoContent::stopContent()
 {
-    if (m_viewContext)
-    {
-        m_viewContext->deleteLater();
-        m_viewContext = NULL;
-        if (m_video->fullscreen())
-            m_provider->setFullscreenContext(NULL);
-    }
+    if (m_viewContext == NULL)
+        return;
+
+    QMetaObject::invokeMethod(m_viewContext->rootObject(), "removeContent",
+                              Q_ARG(QVariant, m_video->id()));
 }
 
 void VideoContent::slotDetectResolution()
@@ -244,5 +247,5 @@ void VideoContent::slotMetaDataChanged(const QString &key, const QVariant &value
 
 void VideoContent::slotWindowClosing()
 {
-    stopVideo();
+    stopContent();
 }

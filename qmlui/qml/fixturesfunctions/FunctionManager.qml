@@ -34,10 +34,13 @@ Rectangle
 
     function loadFunctionEditor(funcID, funcType)
     {
+        if (!(qlcplus.accessMask & App.AC_FunctionEditing))
+            return
+
         //console.log("Request to open Function editor. ID: " + funcID + " type: " + funcType)
-        functionManager.setEditorFunction(funcID, false)
+        functionManager.setEditorFunction(funcID, false, false)
         functionManager.viewPosition = functionsListView.contentY
-        var editorRes = functionManager.getEditorResource(funcType)
+        var editorRes = functionManager.getEditorResource(funcID)
 
         if (funcType === Function.ShowType)
         {
@@ -243,7 +246,7 @@ Rectangle
               id: sTextInput
               y: 3
               height: parent.height - 6
-              width: searchBox.width
+              width: parent.width
               color: UISettings.fgMain
               text: functionManager.searchFilter
               font.family: "Roboto Condensed"
@@ -259,7 +262,7 @@ Rectangle
       {
           id: functionsListView
           width: fmContainer.width
-          height: fmContainer.height - topBar.height
+          height: fmContainer.height - topBar.height - (searchBox.visible ? searchBox.height : 0)
           //anchors.fill: parent
           z: 4
           boundsBehavior: Flickable.StopAtBounds
@@ -291,6 +294,7 @@ Rectangle
                               item.nodePath = path
                               item.isExpanded = isExpanded
                               item.nodeChildren = childrenModel
+                              item.dropKeys = "function"
                           }
                           else
                           {
@@ -312,6 +316,7 @@ Rectangle
                                     fDragItem.parent = mainView
                                     fDragItem.x = posnInWindow.x - (fDragItem.width / 4)
                                     fDragItem.y = posnInWindow.y - (fDragItem.height / 4)
+                                    fDragItem.modifiers = mouseMods
                                 break;
                                 case App.Clicked:
                                     if (qItem == item)
@@ -359,6 +364,12 @@ Rectangle
                           ignoreUnknownSignals: true
                           target: item
                           onPathChanged: functionManager.setFolderPath(oldPath, newPath)
+                      }
+                      Connections
+                      {
+                          ignoreUnknownSignals: true
+                          target: item
+                          onItemsDropped: functionManager.moveFunctions(path)
                       }
                   } // Loader
               } // Component
